@@ -53,6 +53,9 @@ const ProductItemConfigSchema = z.object({
 	on_increase: z.enum(OnIncrease).nullish(),
 	on_decrease: z.enum(OnDecrease).nullish(),
 	rollover: RolloverConfigSchema.nullish(),
+	allow_overusage: z.boolean().nullish().meta({
+		description: "Allow users to exceed their included usage limit. Additional usage will be charged according to the feature's pricing configuration.",
+	}),
 });
 
 export const ProductItemSchema = z.object({

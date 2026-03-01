@@ -81,12 +81,13 @@ export const findSimilarItem = ({
 	return null;
 };
 
-type TierLike = { to: number | "inf"; amount: number; flat_amount?: number | null };
+type TierLike = {
+	to: number | "inf";
+	amount: number;
+	flat_amount?: number | null;
+};
 
-const tiersAreSame = (
-	tiers1: TierLike[] | null,
-	tiers2: TierLike[] | null,
-) => {
+const tiersAreSame = (tiers1: TierLike[] | null, tiers2: TierLike[] | null) => {
 	if (!tiers1 && !tiers2) {
 		return true;
 	}
@@ -162,6 +163,11 @@ export const featureItemsAreSame = ({
 		// 	condition: JSON.stringify(item1.config) === JSON.stringify(item2.config),
 		// 	message: `Config different: ${JSON.stringify(item1.config)} !== ${JSON.stringify(item2.config)}`,
 		// },
+		allow_overusage: {
+			condition:
+				item1.config?.allow_overusage === item2.config?.allow_overusage,
+			message: `Allow overusage different: ${item1.config?.allow_overusage} !== ${item2.config?.allow_overusage}`,
+		},
 	};
 
 	const same = Object.values(checks).every((d) => d.condition);
