@@ -1,12 +1,13 @@
+import { AreaRadioGroupItem } from "@/components/v2/radio-groups/AreaRadioGroupItem";
+import { RadioGroup } from "@/components/v2/radio-groups/RadioGroup";
+import { SheetSection } from "@/components/v2/sheets/InlineSheet";
+import { AIModelSchema } from "@/views/products/features/credit-systems/components/AIModelSchema";
+import { CreditSystemSchema } from "@/views/products/features/credit-systems/components/CreditSystemSchema";
 import {
 	type CreateFeature,
 	FeatureType,
 	FeatureUsageType,
 } from "@autumn/shared";
-import { AreaRadioGroupItem } from "@/components/v2/radio-groups/AreaRadioGroupItem";
-import { RadioGroup } from "@/components/v2/radio-groups/RadioGroup";
-import { SheetSection } from "@/components/v2/sheets/InlineSheet";
-import { CreditSystemSchema } from "@/views/products/features/credit-systems/components/CreditSystemSchema";
 
 export function NewFeatureBehaviour({
 	feature,
@@ -50,5 +51,8 @@ export function NewFeatureBehaviour({
 				</RadioGroup>
 			</SheetSection>
 		);
+	}
+	if (feature.type === FeatureType.AI) {
+		return <AIModelSchema aiFeature={feature} setAIFeature={setFeature} />;
 	}
 }
