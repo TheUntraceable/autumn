@@ -47,4 +47,12 @@ export const BaseFeatureV1ParamsSchema = z.object({
 		}),
 
 	event_names: z.array(z.string()).optional(),
+
+	price_per_million_tokens_in: z.number().optional().meta({
+		description: "Price per million input tokens for AI features.",
+	}),
+
+	price_per_million_tokens_out: z.number().optional().meta({
+		description: "Price per million output tokens for AI features.",
+	}),
 });

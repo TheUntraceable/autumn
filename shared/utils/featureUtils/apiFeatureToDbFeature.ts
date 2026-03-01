@@ -84,6 +84,18 @@ export const featureV1ToDbFeatureConfig = ({
 }) => {
 	const type = apiFeature.type || originalFeature.type;
 
+	if (type === FeatureType.AI) {
+		return {
+			...originalFeature.config,
+			...(notNullish(apiFeature.price_per_million_tokens_in) && {
+				price_per_million_tokens_in: apiFeature.price_per_million_tokens_in,
+			}),
+			...(notNullish(apiFeature.price_per_million_tokens_out) && {
+				price_per_million_tokens_out: apiFeature.price_per_million_tokens_out,
+			}),
+		};
+	}
+
 	if (nullish(apiFeature.consumable) && nullish(apiFeature.credit_schema))
 		return;
 
@@ -148,6 +160,17 @@ export const featureV1ToDbFeature = ({
 				credit_amount: credit.credit_cost,
 			}),
 		);
+	}
+
+	if (featureType === FeatureType.AI) {
+		if (notNullish(apiFeature.price_per_million_tokens_in)) {
+			newConfig.price_per_million_tokens_in =
+				apiFeature.price_per_million_tokens_in;
+		}
+		if (notNullish(apiFeature.price_per_million_tokens_out)) {
+			newConfig.price_per_million_tokens_out =
+				apiFeature.price_per_million_tokens_out;
+		}
 	}
 
 	return {

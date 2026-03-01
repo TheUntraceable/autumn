@@ -61,6 +61,14 @@ export const ApiFeatureV1Schema = z.object({
 		description:
 			"Whether the feature is archived and hidden from the dashboard.",
 	}),
+
+	price_per_million_tokens_in: z.number().optional().meta({
+		description: "For AI features: price per million input tokens.",
+	}),
+
+	price_per_million_tokens_out: z.number().optional().meta({
+		description: "For AI features: price per million output tokens.",
+	}),
 });
 
 export type ApiFeatureV1 = z.infer<typeof ApiFeatureV1Schema>;

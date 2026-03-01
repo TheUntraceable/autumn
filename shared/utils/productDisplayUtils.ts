@@ -53,6 +53,14 @@ const getIncludedUsageText = (item: ProductItem, feature: Feature): string => {
 		return `Unlimited ${featureName}`;
 	}
 
+	// AI features always display as "{name} tokens" regardless of value
+	if (feature.type === FeatureType.AI) {
+		if (nullish(item.included_usage) || item.included_usage === 0) {
+			return `0 ${featureName} tokens`;
+		}
+		return `${numberWithCommas(item.included_usage)} ${featureName} tokens`;
+	}
+
 	if (nullish(item.included_usage) || item.included_usage === 0) {
 		return `0 ${featureName}`;
 	}
