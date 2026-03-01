@@ -1,5 +1,6 @@
 /** biome-ignore-all lint/a11y/noSvgWithoutTitle: needed */
 import { useId } from "react";
+import { Brain } from "lucide-react";
 
 const FeatureArrowIcon = () => {
 	return (
@@ -390,5 +391,24 @@ export const RevenueCatIcon = ({
 				fill={color}
 			></path>
 		</svg>
+	);
+};
+
+export const AIFeatureIcon = ({
+	size = 16,
+	color = "currentColor",
+	className = "",
+}: {
+	size?: number;
+	color?: string;
+	className?: string;
+}) => {
+	return (
+		<Brain
+			size={size}
+			color={color}
+			className={className}
+			aria-label="AI Model"
+		/>
 	);
 };
