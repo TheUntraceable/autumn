@@ -20,22 +20,41 @@ export function AIFeatureSettings() {
 						Set the number of tokens included in this plan. Users will be able
 						to use these tokens without additional charges.
 					</div>
-					<div>
-						<FormLabel>Token Amount</FormLabel>
-						<Input
-							type="number"
-							placeholder="e.g. 100000"
-							value={includedTokens || ""}
-							onChange={(e) => {
-								const value = e.target.value;
-								const numValue = value === "" ? 0 : parseInt(value) || 0;
-								setItem({
-									...item,
-									included_usage: numValue,
-								});
-							}}
-							className="w-xs"
-						/>
+					<div className="flex flex-col gap-4">
+						<div>
+							<FormLabel>Included Input Tokens</FormLabel>
+							<Input
+								type="number"
+								placeholder="e.g. 100,000"
+								value={includedTokens || ""}
+								onChange={(e) => {
+									const value = e.target.value;
+									const numValue = value === "" ? 0 : parseInt(value) || 0;
+									setItem({
+										...item,
+										included_usage: numValue,
+									});
+								}}
+								className="w-xs"
+							/>
+						</div>
+						<div>
+							<FormLabel>Included Output Tokens</FormLabel>
+							<Input
+								type="number"
+								placeholder="e.g. 100,000"
+								value={includedTokens || ""}
+								onChange={(e) => {
+									const value = e.target.value;
+									const numValue = value === "" ? 0 : parseInt(value) || 0;
+									setItem({
+										...item,
+										included_usage: numValue,
+									});
+								}}
+								className="w-xs"
+							/>
+						</div>
 					</div>
 				</div>
 			</SheetSection>
