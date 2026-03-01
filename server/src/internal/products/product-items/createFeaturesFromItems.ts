@@ -52,6 +52,8 @@ export const createFeaturesFromItems = ({
 						statusCode: 400,
 					});
 				}
+			} else if (feature.type === FeatureType.AI) {
+				// AI features have their own type — no usage_type comparison needed
 			} else {
 				const usageFail = item.feature_type !== feature.config?.usage_type;
 				if (usageFail) {
