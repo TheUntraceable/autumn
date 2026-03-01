@@ -2,6 +2,7 @@ export enum FeatureType {
 	Boolean = "boolean",
 	Metered = "metered",
 	CreditSystem = "credit_system",
+	AI = "ai",
 }
 
 export enum AggregateType {
