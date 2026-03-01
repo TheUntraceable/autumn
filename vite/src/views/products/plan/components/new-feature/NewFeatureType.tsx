@@ -6,7 +6,7 @@ import {
 import { BarcodeIcon, CoinsIcon } from "@phosphor-icons/react";
 import { WarningBox } from "@/components/general/modal-components/WarningBox";
 import { PanelButton } from "@/components/v2/buttons/PanelButton";
-import { BooleanIcon } from "@/components/v2/icons/AutumnIcons";
+import { BooleanIcon, AIFeatureIcon } from "@/components/v2/icons/AutumnIcons";
 import { SheetSection } from "@/components/v2/sheets/InlineSheet";
 
 export function NewFeatureType({
@@ -104,7 +104,23 @@ export function NewFeatureType({
 						</div>
 					</div>
 				</div>
-
+					<div className="flex w-full items-center gap-4">
+						<PanelButton
+							isSelected={feature.type === APIFeatureType.AI}
+							onClick={() => {
+								setFeature({ ...feature, type: APIFeatureType.AI });
+							}}
+							icon={<AIFeatureIcon className="hover:text-primary" />}
+						/>
+						<div className="flex-1">
+							<div className="text-body-highlight mb-1 flex-row flex items-center gap-1">
+								AI Model
+							</div>
+							<div className="text-body-secondary leading-tight">
+								A token-based feature to track and limit AI usage in your app per token
+							</div>
+						</div>
+					</div>
 				{showBooleanWarning && (
 					<WarningBox>
 						Boolean features don't have prices or limits so you will skip the
