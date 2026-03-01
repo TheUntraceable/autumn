@@ -1,15 +1,17 @@
-import { AppEnv, type Feature, FeatureType } from "@autumn/shared";
-import { ArrowSquareOutIcon, CoinsIcon, LegoIcon } from "@phosphor-icons/react";
-import { useMemo, useState } from "react";
 import { Table } from "@/components/general/table";
 import { IconButton } from "@/components/v2/buttons/IconButton";
 import { EmptyState } from "@/components/v2/empty-states/EmptyState";
+import { AIFeatureIcon } from "@/components/v2/icons/AutumnIcons";
 import { useFeaturesQuery } from "@/hooks/queries/useFeaturesQuery";
 import { useEnv } from "@/utils/envUtils";
 import { useProductsQueryState } from "@/views/products/hooks/useProductsQueryState";
 import { useProductTable } from "@/views/products/hooks/useProductTable";
+import { AppEnv, type Feature, FeatureType } from "@autumn/shared";
+import { ArrowSquareOutIcon, CoinsIcon, LegoIcon } from "@phosphor-icons/react";
+import { useMemo, useState } from "react";
 import UpdateFeatureSheet from "../components/UpdateFeatureSheet";
 import UpdateCreditSystemSheet from "../credit-systems/components/UpdateCreditSystemSheet";
+import { createAIListColumns } from "./AIListColumns";
 import { createCreditListColumns } from "./CreditListColumns";
 import { createFeatureListColumns } from "./FeatureListColumns";
 import { FeatureListCreateButton } from "./FeatureListCreateButton";
@@ -26,37 +28,56 @@ export function FeatureListTable() {
 	const [updateCreditOpen, setUpdateCreditOpen] = useState(false);
 
 	// Filter features and credit systems based on archived state
-	const { regularFeatures, creditSystems, hasEventNames } = useMemo(() => {
-		const regularFeatures = features?.filter((feature) => {
-			if (feature.type === FeatureType.CreditSystem) return false;
-			return queryStates.showArchivedFeatures
-				? feature.archived
-				: !feature.archived;
-		});
+	const { regularFeatures, aiFeatures, creditSystems, hasEventNames } =
+		useMemo(() => {
+			const regularFeatures = features?.filter((feature) => {
+				if (feature.type === FeatureType.CreditSystem) return false;
+				if (feature.type === FeatureType.AI) return false;
+				return queryStates.showArchivedFeatures
+					? feature.archived
+					: !feature.archived;
+			});
 
-		const creditSystems = features?.filter((feature) => {
-			if (feature.type !== FeatureType.CreditSystem) return false;
-			return queryStates.showArchivedFeatures
-				? feature.archived
-				: !feature.archived;
-		});
-		// Check if any feature has event names
-		const hasEventNames = regularFeatures?.some(
-			(feature) => feature.event_names && feature.event_names.length > 0,
-		);
+			const aiFeatures = features?.filter((feature) => {
+				if (feature.type !== FeatureType.AI) return false;
+				return queryStates.showArchivedFeatures
+					? feature.archived
+					: !feature.archived;
+			});
 
-		return { regularFeatures, creditSystems, hasEventNames };
-	}, [features, queryStates.showArchivedFeatures]);
+			const creditSystems = features?.filter((feature) => {
+				if (feature.type !== FeatureType.CreditSystem) return false;
+				return queryStates.showArchivedFeatures
+					? feature.archived
+					: !feature.archived;
+			});
+			// Check if any feature has event names
+			const hasEventNames = regularFeatures?.some(
+				(feature) => feature.event_names && feature.event_names.length > 0,
+			);
+
+			return { regularFeatures, aiFeatures, creditSystems, hasEventNames };
+		}, [features, queryStates.showArchivedFeatures]);
 
 	const featureColumns = useMemo(
 		() => createFeatureListColumns({ showEventNames: hasEventNames }),
 		[hasEventNames],
 	);
+	const aiColumns = useMemo(() => createAIListColumns(), []);
 	const creditColumns = useMemo(() => createCreditListColumns(), []);
 
 	const featureTable = useProductTable({
 		data: regularFeatures || [],
 		columns: featureColumns,
+		options: {
+			globalFilterFn: "includesString",
+			enableGlobalFilter: true,
+		},
+	});
+
+	const aiTable = useProductTable({
+		data: aiFeatures || [],
+		columns: aiColumns,
 		options: {
 			globalFilterFn: "includesString",
 			enableGlobalFilter: true,
@@ -77,6 +98,11 @@ export function FeatureListTable() {
 		setUpdateFeatureOpen(true);
 	};
 
+	const handleAIRowClick = (aiFeature: Feature) => {
+		setSelectedFeature(aiFeature);
+		setUpdateFeatureOpen(true);
+	};
+
 	const handleCreditRowClick = (creditSystem: Feature) => {
 		setSelectedCreditSystem(creditSystem);
 		setUpdateCreditOpen(true);
@@ -86,6 +112,7 @@ export function FeatureListTable() {
 
 	const hasFeatureRows =
 		featureTable.getRowModel().rows.length > 0 ||
+		aiTable.getRowModel().rows.length > 0 ||
 		creditTable.getRowModel().rows.length > 0;
 
 	// For archived view, always show table structure even if empty
@@ -180,6 +207,51 @@ export function FeatureListTable() {
 						type="features"
 						actionButton={<FeatureListCreateButton />}
 					/>
+				)}
+
+				{/* AI Models Table */}
+				{aiTable.getRowModel().rows.length > 0 && (
+					<div>
+						<Table.Provider
+							config={{
+								table: aiTable,
+								numberOfColumns: aiColumns.length,
+								enableSorting,
+								isLoading: false,
+								onRowClick: handleAIRowClick,
+								emptyStateText: "You haven't archived any AI models yet.",
+								rowClassName: "h-10",
+							}}
+						>
+							<Table.Toolbar>
+								<div className="flex w-full justify-between items-center">
+									<Table.Heading>
+										<AIFeatureIcon />
+										AI Models
+									</Table.Heading>
+									<Table.Actions>
+										<div className="flex w-full justify-between items-center">
+											<div className="flex items-center gap-2">
+												{/* Add search and other filters here in the future if needed */}
+											</div>
+											<div className="flex items-center gap-2">
+												<FeatureListCreateButton />
+												<FeatureListMenuButton />
+											</div>
+										</div>
+									</Table.Actions>
+								</div>
+							</Table.Toolbar>
+							<div>
+								<Table.Container>
+									<Table.Content>
+										<Table.Header />
+										<Table.Body />
+									</Table.Content>
+								</Table.Container>
+							</div>
+						</Table.Provider>
+					</div>
 				)}
 
 				{/* Credits Table - Only shown if there's at least one feature */}

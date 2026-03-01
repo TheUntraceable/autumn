@@ -1,8 +1,8 @@
-import { FeatureType, FeatureUsageType } from "@autumn/shared";
-import { BoxArrowDownIcon } from "@phosphor-icons/react";
 import { useFeatureStore } from "@/hooks/stores/useFeatureStore";
 import { cn } from "@/lib/utils";
 import { getFeatureIconConfig } from "@/views/products/features/utils/getFeatureIcon";
+import { FeatureType, FeatureUsageType } from "@autumn/shared";
+import { BoxArrowDownIcon } from "@phosphor-icons/react";
 import { CustomDotIcon } from "./PlanFeatureRow";
 
 /**
@@ -41,6 +41,7 @@ export const DummyPlanFeatureRow = () => {
 		if (featureType === FeatureType.CreditSystem) return "Credits";
 		if (isBoolean) return "Premium Analytics";
 		if (isNonConsumable) return "Seats";
+		if (featureType === FeatureType.AI) return "Tokens";
 		return "Chat Messages";
 	};
 
@@ -58,6 +59,10 @@ export const DummyPlanFeatureRow = () => {
 
 		if (isNonConsumable) {
 			return { primary: `10 ${name}`, secondary: "" };
+		}
+
+		if (featureType === FeatureType.AI) {
+			return { primary: `1,000,000 ${name} tokens`, secondary: "per month" };
 		}
 
 		// Default to consumable format (metered single use)

@@ -1,7 +1,3 @@
-import { type Feature, FeatureUsageType } from "@autumn/shared";
-import type { AxiosError } from "axios";
-import { useEffect, useState } from "react";
-import { toast } from "sonner";
 import { ShortcutButton } from "@/components/v2/buttons/ShortcutButton";
 import {
 	SheetFooter,
@@ -13,6 +9,10 @@ import { useFeatureStore } from "@/hooks/stores/useFeatureStore";
 import { FeatureService } from "@/services/FeatureService";
 import { useAxiosInstance } from "@/services/useAxiosInstance";
 import { getBackendErr } from "@/utils/genUtils";
+import { type Feature, FeatureUsageType } from "@autumn/shared";
+import type { AxiosError } from "axios";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { NewFeatureAdvanced } from "../../plan/components/new-feature/NewFeatureAdvanced";
 import { NewFeatureBehaviour } from "../../plan/components/new-feature/NewFeatureBehaviour";
 import { NewFeatureDetails } from "../../plan/components/new-feature/NewFeatureDetails";
@@ -59,6 +59,10 @@ function UpdateFeatureSheet({
 				name: feature.name || undefined,
 				type: feature.type,
 				consumable: feature.config?.usage_type === FeatureUsageType.Single,
+				price_per_million_tokens_in:
+					feature.config?.price_per_million_tokens_in,
+				price_per_million_tokens_out:
+					feature.config?.price_per_million_tokens_out,
 				event_names: feature.event_names,
 				display: undefined,
 			});

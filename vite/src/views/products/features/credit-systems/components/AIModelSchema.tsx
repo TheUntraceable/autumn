@@ -1,6 +1,6 @@
 import { LabelInput } from "@/components/v2/inputs/LabelInput";
 import { SheetSection } from "@/components/v2/sheets/SharedSheetComponents";
-import { type CreateFeature } from "@autumn/shared";
+import type { CreateFeature } from "@autumn/shared";
 
 interface AIModelSchemaProps {
 	aiFeature: CreateFeature;

@@ -26,6 +26,7 @@ import UpdateFeatureSheet from "@/views/products/features/components/UpdateFeatu
 import UpdateCreditSystemSheet from "@/views/products/features/credit-systems/components/UpdateCreditSystemSheet";
 import { useProductItemContext } from "@/views/products/product/product-item/ProductItemContext";
 import { AdvancedSettings } from "./AdvancedSettings";
+import { AIFeatureSettings } from "./AIFeatureSettings";
 import { BillingType } from "./BillingType";
 import { IncludedUsage } from "./IncludedUsage";
 import { PricedFeatureSettings } from "./PricedFeatureSettings";
@@ -105,86 +106,90 @@ export function EditPlanFeatureSheet({
 					/>
 				)}
 
-				{feature?.type !== FeatureType.Boolean && (
-					<>
-						<SheetSection title="Feature Type">
-							<BillingType />
-						</SheetSection>
+				{feature?.type === FeatureType.AI && <AIFeatureSettings />}
 
-						<SheetSection
-							title={`Grant Amount ${isFeaturePrice ? "(optional)" : ""}`}
-						>
-							<IncludedUsage />
-						</SheetSection>
-
-						{isFeaturePrice && (
-							<SheetSection
-								title={
-									item.tiers && item.tiers.length > 1 ? (
-										<div className="flex items-center justify-between w-full">
-											<span>Price</span>
-											<Select
-												value={item.tier_behavior ?? TierBehavior.Graduated}
-												onValueChange={(val) =>
-													setItem({
-														...item,
-														tier_behavior: val as TierBehavior,
-													})
-												}
-											>
-												<SelectTrigger className="w-40 h-6 text-xs" size="sm">
-													<SelectValue>
-														{item.tier_behavior === TierBehavior.VolumeBased ? (
-															<span className="flex items-center gap-2">
-																<DropSimpleIcon
-																	className="size-3.5"
-																	weight="regular"
-																/>
-																Volume-based
-															</span>
-														) : (
-															<span className="flex items-center gap-2">
-																<RulerIcon
-																	className="size-3.5"
-																	weight="regular"
-																/>
-																Graduated
-															</span>
-														)}
-													</SelectValue>
-												</SelectTrigger>
-												<SelectContent>
-													<SelectItem value={TierBehavior.Graduated}>
-														<RulerIcon className="size-4" weight="regular" />
-														Graduated
-													</SelectItem>
-													<SelectItem value={TierBehavior.VolumeBased}>
-														<DropSimpleIcon
-															className="size-4"
-															weight="regular"
-														/>
-														Volume-based
-													</SelectItem>
-												</SelectContent>
-											</Select>
-										</div>
-									) : (
-										"Price"
-									)
-								}
-								className="space-y-3"
-							>
-								<div>
-									<PriceTiers />
-									<UsageReset showBillingLabel={true} />
-								</div>
-								<PricedFeatureSettings />
+				{feature?.type !== FeatureType.Boolean &&
+					feature?.type !== FeatureType.AI && (
+						<>
+							<SheetSection title="Feature Type">
+								<BillingType />
 							</SheetSection>
-						)}
 
-						<AdvancedSettings />
-					</>
-				)}
+							<SheetSection
+								title={`Grant Amount ${isFeaturePrice ? "(optional)" : ""}`}
+							>
+								<IncludedUsage />
+							</SheetSection>
+
+							{isFeaturePrice && (
+								<SheetSection
+									title={
+										item.tiers && item.tiers.length > 1 ? (
+											<div className="flex items-center justify-between w-full">
+												<span>Price</span>
+												<Select
+													value={item.tier_behavior ?? TierBehavior.Graduated}
+													onValueChange={(val) =>
+														setItem({
+															...item,
+															tier_behavior: val as TierBehavior,
+														})
+													}
+												>
+													<SelectTrigger className="w-40 h-6 text-xs" size="sm">
+														<SelectValue>
+															{item.tier_behavior ===
+															TierBehavior.VolumeBased ? (
+																<span className="flex items-center gap-2">
+																	<DropSimpleIcon
+																		className="size-3.5"
+																		weight="regular"
+																	/>
+																	Volume-based
+																</span>
+															) : (
+																<span className="flex items-center gap-2">
+																	<RulerIcon
+																		className="size-3.5"
+																		weight="regular"
+																	/>
+																	Graduated
+																</span>
+															)}
+														</SelectValue>
+													</SelectTrigger>
+													<SelectContent>
+														<SelectItem value={TierBehavior.Graduated}>
+															<RulerIcon className="size-4" weight="regular" />
+															Graduated
+														</SelectItem>
+														<SelectItem value={TierBehavior.VolumeBased}>
+															<DropSimpleIcon
+																className="size-4"
+																weight="regular"
+															/>
+															Volume-based
+														</SelectItem>
+													</SelectContent>
+												</Select>
+											</div>
+										) : (
+											"Price"
+										)
+									}
+									className="space-y-3"
+								>
+									<div>
+										<PriceTiers />
+										<UsageReset showBillingLabel={true} />
+									</div>
+									<PricedFeatureSettings />
+								</SheetSection>
+							)}
+
+							<AdvancedSettings />
+						</>
+					)}
 
 				{feature?.type === FeatureType.Boolean && (
 					<div className="p-4 flex flex-col gap-2 h-full items-center justify-center">

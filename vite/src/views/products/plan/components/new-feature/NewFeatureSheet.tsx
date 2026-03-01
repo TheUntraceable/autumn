@@ -1,13 +1,3 @@
-import {
-	CreateFeatureSchema,
-	type CreditSchemaItem,
-	FeatureType,
-	FeatureUsageType,
-	featureV1ToDbFeature,
-} from "@autumn/shared";
-import type { AxiosError } from "axios";
-import { useState } from "react";
-import { toast } from "sonner";
 import { ShortcutButton } from "@/components/v2/buttons/ShortcutButton";
 import {
 	useProduct,
@@ -21,6 +11,16 @@ import { useAxiosInstance } from "@/services/useAxiosInstance";
 import { getBackendErr } from "@/utils/genUtils";
 import { getItemId } from "@/utils/product/productItemUtils";
 import { validateCreditSystem } from "@/views/products/features/credit-systems/utils/validateCreditSystem";
+import {
+	CreateFeatureSchema,
+	type CreditSchemaItem,
+	FeatureType,
+	FeatureUsageType,
+	featureV1ToDbFeature,
+} from "@autumn/shared";
+import type { AxiosError } from "axios";
+import { useState } from "react";
+import { toast } from "sonner";
 import { useSaveRestoreFeature } from "../../hooks/useSaveRestoreFeature";
 import { getDefaultItem } from "../../utils/getDefaultItem";
 import { NewFeatureAdvanced } from "./NewFeatureAdvanced";
@@ -74,6 +74,10 @@ export function NewFeatureSheet({ isOnboarding }: { isOnboarding?: boolean }) {
 								credit_cost: x.credit_amount,
 							}),
 						),
+						price_per_million_tokens_in:
+							feature.config?.price_per_million_tokens_in,
+						price_per_million_tokens_out:
+							feature.config?.price_per_million_tokens_out,
 						event_names: feature.event_names,
 					},
 				);
