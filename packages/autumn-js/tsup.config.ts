@@ -106,5 +106,25 @@ export default defineConfig([
 		},
 	},
 
+	// AI namespace extension (src/ai)
+	{
+		format: ["cjs", "esm"],
+		entry: ["./src/ai/index.ts"],
+		skipNodeModulesBundle: true,
+		noExternal,
+		dts: true,
+		shims: true,
+		clean: false,
+		outDir: "./dist/ai",
+		splitting: false,
+		treeshake: true,
+		target: "es2020",
+		esbuildOptions(options) {
+			options.plugins = options.plugins || [];
+			options.plugins.push(alias(pathAliases));
+			options.mainFields = ["module", "main"];
+		},
+	},
+
 	...reactConfigs,
 ]);
