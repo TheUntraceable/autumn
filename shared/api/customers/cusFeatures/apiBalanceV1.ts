@@ -124,9 +124,22 @@ export const ApiBalanceV1Schema = z
 			description: "Total balance granted (included + prepaid).",
 		}),
 
-		remaining: z.number().min(0).meta({
-			description: "Remaining balance available for use.",
-		}),
+		remaining: z
+			.union([
+				z.number().min(0),
+				z.object({
+					input: z.number().min(0).meta({
+						description: "Remaining input token balance.",
+					}),
+					output: z.number().min(0).meta({
+						description: "Remaining output token balance.",
+					}),
+				}),
+			])
+			.meta({
+				description:
+					"Remaining balance available for use. For AI features, this is an object with input and output token counts.",
+			}),
 
 		usage: z.number().meta({
 			description: "Total usage consumed in the current period.",

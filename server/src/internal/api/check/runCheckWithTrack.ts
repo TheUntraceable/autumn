@@ -43,6 +43,7 @@ export const runCheckWithTrack = async ({
 		ctx,
 		featureId: body.feature_id,
 		value: requiredBalance,
+		properties: body.properties,
 	});
 
 	const trackBody: TrackParams = {

@@ -1,4 +1,4 @@
-import { ResetInterval } from "@autumn/shared";
+import { AiTokenAllowanceSchema, ResetInterval } from "@autumn/shared";
 import { z } from "zod/v4";
 import { BalanceParamsBaseSchema } from "../common/balanceParamsBase";
 
@@ -30,6 +30,14 @@ export const UpdateBalanceParamsV0Schema =
 		}),
 
 		granted_balance: z.number().optional().meta({ internal: true }),
+
+		/** For AI features: set the current ai_balance directly */
+		ai_balance: AiTokenAllowanceSchema.optional().meta({ internal: true }),
+
+		/** For AI features: add to the current ai_balance */
+		add_to_ai_balance: AiTokenAllowanceSchema.optional().meta({
+			internal: true,
+		}),
 
 		customer_entitlement_id: z.string().optional().meta({ internal: true }),
 		next_reset_at: z.number().optional().meta({ internal: true }),

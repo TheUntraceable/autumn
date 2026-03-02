@@ -6,4 +6,5 @@ export interface CheckData {
 	apiBalance?: ApiBalanceV1;
 	originalFeature: Feature;
 	featureToUse: Feature;
+	properties?: Record<string, unknown>;
 }

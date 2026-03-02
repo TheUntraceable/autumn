@@ -88,7 +88,7 @@ export function balanceV1ToV0({ input }: { input: ApiBalanceV1 }): ApiBalance {
 		unlimited: input.unlimited,
 		granted_balance: grantedBalance,
 		purchased_balance: purchasedBalance,
-		current_balance: input.remaining,
+		current_balance: typeof input.remaining === "number" ? input.remaining : 0,
 		usage: input.usage,
 		overage_allowed: input.overage_allowed,
 		max_purchase: input.max_purchase,

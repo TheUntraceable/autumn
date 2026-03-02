@@ -110,5 +110,6 @@ export const getCheckData = async ({
 		apiBalance,
 		originalFeature: feature,
 		featureToUse,
+		properties: body.properties,
 	};
 };

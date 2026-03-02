@@ -9,6 +9,7 @@ import {
 	CustomerExpand,
 	cusEntsToAdjustment,
 	cusEntsToAllowance,
+	cusEntsToCurrentAiBalance,
 	cusEntsToCurrentBalance,
 	cusEntsToMaxPurchase,
 	cusEntsToNextResetAt,
@@ -190,6 +191,20 @@ export const getApiBalance = ({
 	const totalRolloverBalance = cusEntsToRolloverBalance({ cusEnts, entityId });
 	const totalRolloverUsage = cusEntsToRolloverUsage({ cusEnts, entityId });
 
+	// For AI features, remaining is the token balance object {input, output}
+	const aiTokenBalance =
+		feature.type === FeatureType.AI
+			? cusEntsToCurrentAiBalance({ cusEnts })
+			: undefined;
+
+	const remaining =
+		aiTokenBalance != null
+			? aiTokenBalance
+			: new Decimal(totalRemaining)
+					.add(totalRolloverBalance)
+					.add(totalUnused)
+					.toNumber();
+
 	return {
 		data: {
 			object: "balance",
@@ -199,10 +214,7 @@ export const getApiBalance = ({
 
 			granted: new Decimal(totalGranted).add(totalRolloverGranted).toNumber(),
 
-			remaining: new Decimal(totalRemaining)
-				.add(totalRolloverBalance)
-				.add(totalUnused)
-				.toNumber(),
+			remaining,
 
 			usage: new Decimal(totalUsage)
 				.add(totalRolloverUsage)

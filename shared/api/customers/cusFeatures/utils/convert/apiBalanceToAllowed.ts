@@ -1,17 +1,24 @@
 import type { ApiBalanceV1 } from "@api/customers/cusFeatures/apiBalanceV1";
 import { apiBalanceV1ToAvailableOverage } from "@api/customers/cusFeatures/utils/convert/apiBalanceV1ToAvailableOverage";
 import type { Feature } from "@models/featureModels/featureModels";
-import { isBooleanFeature, notNullish } from "@utils/index";
+import {
+	extractAiTokenProperties,
+	isAiFeature,
+	isBooleanFeature,
+	notNullish,
+} from "@utils/index";
 import { Decimal } from "decimal.js";
 
 export const apiBalanceToAllowed = ({
 	apiBalance,
 	feature,
 	requiredBalance,
+	properties,
 }: {
 	apiBalance: ApiBalanceV1;
 	feature: Feature;
 	requiredBalance: number;
+	properties?: Record<string, unknown>;
 }) => {
 	if (!apiBalance) {
 		return false;
@@ -27,27 +34,52 @@ export const apiBalanceToAllowed = ({
 		return true;
 	}
 
-	// 2. Required balance is negative
+	// 3. Required balance is negative
 	if (requiredBalance < 0) {
 		return true;
 	}
 
-	// 3. Overage allowed
+	// 4. AI feature: check input and output token balances independently
+	if (isAiFeature(feature)) {
+		const remaining = apiBalance.remaining;
+		if (typeof remaining !== "object" || remaining === null) {
+			return false;
+		}
+
+		if (apiBalance.overage_allowed) {
+			return true;
+		}
+
+		const tokenProps = extractAiTokenProperties({ properties });
+		if (!tokenProps) {
+			// No token properties: allow if any tokens remain
+			return remaining.input > 0 || remaining.output > 0;
+		}
+
+		return (
+			remaining.input >= tokenProps.input_tokens &&
+			remaining.output >= tokenProps.output_tokens
+		);
+	}
+
+	const remaining = apiBalance.remaining;
+	if (typeof remaining !== "number") {
+		return false;
+	}
+
+	// 5. Overage allowed (non-AI)
 	if (apiBalance.overage_allowed) {
-		// 1. Available overage
 		const availableOverage = apiBalanceV1ToAvailableOverage({ apiBalance });
 
 		if (notNullish(availableOverage)) {
-			return new Decimal(availableOverage)
-				.add(apiBalance.remaining)
-				.gte(requiredBalance);
+			return new Decimal(availableOverage).add(remaining).gte(requiredBalance);
 		}
 
 		return true;
 	}
 
-	// 4. Balance >= required balance (V1 uses 'remaining' instead of 'current_balance')
-	if (new Decimal(apiBalance.remaining).gte(requiredBalance)) {
+	// 6. Balance >= required balance
+	if (new Decimal(remaining).gte(requiredBalance)) {
 		return true;
 	}
 

@@ -13,8 +13,14 @@ export const getV2CheckResponse = async ({
 	checkData: CheckData;
 	requiredBalance: number;
 }) => {
-	const { customerId, entityId, apiBalance, originalFeature, featureToUse } =
-		checkData;
+	const {
+		customerId,
+		entityId,
+		apiBalance,
+		originalFeature,
+		featureToUse,
+		properties,
+	} = checkData;
 
 	// If credit system used, need to convert required balance to credit system required balance
 	if (
@@ -42,6 +48,7 @@ export const getV2CheckResponse = async ({
 		apiBalance,
 		feature: featureToUse,
 		requiredBalance,
+		properties,
 	});
 
 	return CheckResponseV3Schema.parse({

@@ -37,6 +37,8 @@ export const handleRedisTrackError = async ({
 			value: body.value ?? 1,
 			featureId: body.feature_id,
 			eventName: body.event_name,
+			remainingInput: error.remainingInput,
+			remainingOutput: error.remainingOutput,
 		});
 	}
 
