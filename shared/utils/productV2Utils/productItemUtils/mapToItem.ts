@@ -47,10 +47,16 @@ export const toFeatureItem = ({ ent }: { ent: EntitlementWithFeature }) => {
 
 	const itemConfig = ent.rollover ? { rollover: ent.rollover } : undefined;
 
+	// AI features: map ai_allowance back to included_usage as {input, output}
+	const includedUsage = ent.ai_allowance
+		? ent.ai_allowance
+		: ent.allowance_type === AllowanceType.Unlimited
+			? Infinite
+			: ent.allowance;
+
 	const item = {
 		feature_id: ent.feature.id,
-		included_usage:
-			ent.allowance_type === AllowanceType.Unlimited ? Infinite : ent.allowance,
+		included_usage: includedUsage,
 		interval: entToItemInterval({ entInterval: ent.interval }),
 		interval_count: ent.interval_count ?? 1,
 
@@ -98,7 +104,7 @@ export const toFeaturePriceItem = ({
 		feature_type:
 			ent.feature.config?.usage_type || ProductItemFeatureType.SingleUse,
 
-		included_usage: ent.allowance,
+		included_usage: ent.ai_allowance ? ent.ai_allowance : ent.allowance,
 
 		interval: billingToItemInterval({ billingInterval: config.interval }),
 		interval_count: config.interval_count ?? 1,

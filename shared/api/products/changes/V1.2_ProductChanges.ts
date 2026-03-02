@@ -1,3 +1,4 @@
+import type { ApiProductItem } from "@api/products/items/previousVersions/apiProductItemV0.js";
 import { planV0ToProductItems } from "@api/products/mappers/planV0ToProductItems.js";
 import { ApiVersion } from "@api/versionUtils/ApiVersion.js";
 import {
@@ -77,7 +78,9 @@ export const V1_2_ProductChanges = defineVersionChange({
 		const productItems = planV0ToProductItems({
 			ctx,
 			plan: input,
-		}).filter((x) => {
+		}) as ApiProductItem[];
+
+		const filteredProductItems = productItems.filter((x) => {
 			if (isPriceItem(x)) {
 				const y: PriceItem = x as unknown as PriceItem;
 				return y.price > 0;
@@ -97,7 +100,7 @@ export const V1_2_ProductChanges = defineVersionChange({
 			archived: input.archived,
 			version: input.version,
 			created_at: input.created_at,
-			items: productItems, // Already includes base price and features
+			items: filteredProductItems, // Already includes base price and features
 			free_trial: input.free_trial
 				? {
 						duration: input.free_trial.duration_type,

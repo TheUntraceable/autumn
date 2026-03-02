@@ -11,6 +11,7 @@ import {
 	FeatureUsageType,
 	type FixedPriceConfig,
 	Infinite,
+	isAiTokenAllowance,
 	itemToBillingInterval,
 	itemToEntInterval,
 	OnDecrease,
@@ -121,6 +122,9 @@ export const toFeature = ({
 	curEnt?: Entitlement;
 }) => {
 	const isBoolean = feature?.type === FeatureType.Boolean;
+	const aiAllowance = isAiTokenAllowance(item.included_usage)
+		? item.included_usage
+		: null;
 
 	const resetUsage = getResetUsage({ item, feature });
 
@@ -134,7 +138,11 @@ export const toFeature = ({
 		internal_feature_id: internalFeatureId,
 		feature_id: item.feature_id!,
 
-		allowance: item.included_usage === Infinite ? null : item.included_usage!,
+		allowance: aiAllowance
+			? null
+			: item.included_usage === Infinite
+				? null
+				: (item.included_usage as number | undefined | null)!,
 		allowance_type: isBoolean
 			? null
 			: item.included_usage === Infinite
@@ -147,6 +155,8 @@ export const toFeature = ({
 		carry_from_previous: !resetUsage,
 		entity_feature_id: item.entity_feature_id,
 		usage_limit: null,
+
+		ai_allowance: aiAllowance,
 
 		rollover: item.config?.rollover,
 	};
@@ -187,6 +197,10 @@ const toFeatureAndPrice = ({
 		feature: features.find((f) => f.id === item.feature_id),
 	});
 
+	const aiAllowance = isAiTokenAllowance(item.included_usage)
+		? item.included_usage
+		: null;
+
 	let ent: Entitlement = {
 		id: item.entitlement_id || curEnt?.id || generateId("ent"),
 		org_id: orgId,
@@ -197,7 +211,7 @@ const toFeatureAndPrice = ({
 		internal_feature_id: internalFeatureId,
 		feature_id: item.feature_id!,
 
-		allowance: (item.included_usage as number) || 0,
+		allowance: aiAllowance ? 0 : (item.included_usage as number) || 0,
 		allowance_type: AllowanceType.Fixed,
 		interval: itemToEntInterval({ item }) as EntInterval,
 		interval_count: item.interval_count || 1,
@@ -205,6 +219,8 @@ const toFeatureAndPrice = ({
 		carry_from_previous: !resetUsage,
 		entity_feature_id: item.entity_feature_id,
 		usage_limit: item.usage_limit || null,
+
+		ai_allowance: aiAllowance,
 
 		rollover: item.config?.rollover,
 	};

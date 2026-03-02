@@ -2,6 +2,7 @@ import { isAllocatedFeature } from "@utils/featureUtils/classifyFeature/isAlloca
 import { isConsumableFeature } from "@utils/featureUtils/classifyFeature/isConsumableFeature";
 import { findFeatureById } from "@utils/featureUtils/findFeatureUtils";
 
+export * from "./aiUtils";
 export * from "./apiFeatureToDbFeature";
 
 export * from "./convertFeatureUtils";

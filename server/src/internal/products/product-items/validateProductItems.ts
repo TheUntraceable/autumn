@@ -5,6 +5,7 @@ import {
 	type Feature,
 	FeatureType,
 	Infinite,
+	isAiTokenAllowance,
 	itemToEntInterval,
 	notNullish,
 	nullish,
@@ -76,18 +77,37 @@ const validateProductItem = ({
 		}
 	}
 
-	// 4. If it's a feature item, it should have included usage as number or inf
+	// 4. If it's a feature item, it should have included usage as number, inf, or AI token allowance object
 	if (isFeaturePriceItem(item) || isFeatureItem(item)) {
+		const allowance = item.included_usage;
+		const isAiAllowance = isAiTokenAllowance(allowance);
 		if (
+			!isAiAllowance &&
 			typeof item.included_usage !== "number" &&
 			item.included_usage !== Infinite &&
 			notNullish(item.included_usage)
 		) {
 			throw new RecaseError({
-				message: `Included usage for feature ${item.feature_id} must be a number or '${Infinite}'`,
+				message: `Included usage for feature ${item.feature_id} must be a number, '${Infinite}', or AI token allowance object`,
 				code: ErrCode.InvalidInputs,
 				statusCode: StatusCodes.BAD_REQUEST,
 			});
+		}
+
+		// Validate AI token allowance if present
+		if (isAiAllowance) {
+			if (
+				typeof allowance.input !== "number" ||
+				typeof allowance.output !== "number" ||
+				allowance.input < 0 ||
+				allowance.output < 0
+			) {
+				throw new RecaseError({
+					message: `AI token allowance must have non-negative input and output numbers`,
+					code: ErrCode.InvalidInputs,
+					statusCode: StatusCodes.BAD_REQUEST,
+				});
+			}
 		}
 
 		if (nullish(item.included_usage)) {

@@ -10,7 +10,10 @@ import {
 import { Decimal } from "decimal.js";
 import { notNullish, nullish } from "@/utils/genUtils.js";
 
-type CustomerLike = ApiCustomerV3 | ApiEntityV0 | { features?: Record<string, any> };
+type CustomerLike =
+	| ApiCustomerV3
+	| ApiEntityV0
+	| { features?: Record<string, any> };
 
 export const expectFeaturesCorrect = ({
 	customer,
@@ -61,8 +64,9 @@ export const expectFeaturesCorrect = ({
 				entities?.filter((e) => e.feature_id === item.entity_feature_id)
 					.length || 1;
 
-			includedUsage +=
-				(item.included_usage || 0) * numEntities * (productQuantity || 1);
+			const usageAmount =
+				typeof item.included_usage === "number" ? item.included_usage : 0;
+			includedUsage += usageAmount * numEntities * (productQuantity || 1);
 		}
 
 		for (const option of options || []) {

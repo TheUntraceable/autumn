@@ -8,6 +8,7 @@ import type { ProductItem } from "../models/productV2Models/productItemModels/pr
 import { formatAmount } from "./common/formatUtils/formatAmount.js";
 import { formatInterval } from "./common/formatUtils/formatInterval.js";
 import { getFeatureName, numberWithCommas } from "./displayUtils.js";
+import { isAiTokenAllowance } from "./featureUtils/aiUtils.js";
 import {
 	isFeatureItem,
 	isFeaturePriceItem,
@@ -55,6 +56,13 @@ const getIncludedUsageText = (item: ProductItem, feature: Feature): string => {
 
 	// AI features always display as "{name} tokens" regardless of value
 	if (feature.type === FeatureType.AI) {
+		// AI features with separate input/output token allowances
+		if (isAiTokenAllowance(item.included_usage)) {
+			const inputStr = numberWithCommas(item.included_usage.input);
+			const outputStr = numberWithCommas(item.included_usage.output);
+			return `${inputStr} input / ${outputStr} output ${featureName} tokens`;
+		}
+
 		if (nullish(item.included_usage) || item.included_usage === 0) {
 			return `0 ${featureName} tokens`;
 		}
@@ -65,7 +73,7 @@ const getIncludedUsageText = (item: ProductItem, feature: Feature): string => {
 		return `0 ${featureName}`;
 	}
 
-	return `${numberWithCommas(item.included_usage)} ${featureName}`;
+	return `${numberWithCommas(item.included_usage as number)} ${featureName}`;
 };
 
 const isSingleUseFeature = (feature: Feature): boolean => {

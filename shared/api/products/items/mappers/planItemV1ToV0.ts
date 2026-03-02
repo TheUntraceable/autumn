@@ -34,6 +34,7 @@ export function planItemV1ToV0({
 		...restItem,
 		unlimited: item.unlimited ?? false,
 		granted_balance: included,
+		ai_allowance: "ai_allowance" in item ? item.ai_allowance : undefined,
 		reset: item.reset
 			? {
 					interval: item.reset.interval,

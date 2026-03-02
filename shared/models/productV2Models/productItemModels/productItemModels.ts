@@ -1,6 +1,7 @@
 import { z } from "zod/v4";
 import { ApiFeatureV0Schema } from "../../../api/features/prevVersions/apiFeatureV0.js";
 import { RolloverExpiryDurationType } from "../../productModels/durationTypes/rolloverExpiryDurationType.js";
+import { AiTokenAllowanceSchema } from "../../productModels/entModels/aiTokenModels.js";
 import { ProductItemInterval } from "../../productModels/intervals/productItemInterval.js";
 import { TierBehavior } from "../../productModels/priceModels/priceConfig/usagePriceConfig.js";
 import { Infinite } from "../../productModels/productEnums.js";
@@ -54,7 +55,8 @@ const ProductItemConfigSchema = z.object({
 	on_decrease: z.enum(OnDecrease).nullish(),
 	rollover: RolloverConfigSchema.nullish(),
 	allow_overusage: z.boolean().nullish().meta({
-		description: "Allow users to exceed their included usage limit. Additional usage will be charged according to the feature's pricing configuration.",
+		description:
+			"Allow users to exceed their included usage limit. Additional usage will be charged according to the feature's pricing configuration.",
 	}),
 });
 
@@ -78,11 +80,11 @@ export const ProductItemSchema = z.object({
 	}),
 
 	included_usage: z
-		.union([z.number(), z.literal(Infinite)])
+		.union([z.number(), z.literal(Infinite), AiTokenAllowanceSchema])
 		.nullish()
 		.meta({
 			description:
-				"The amount of usage included for this feature (per interval).",
+				"The amount of usage included for this feature (per interval). For AI features, pass an object with input and output token amounts.",
 		}),
 
 	interval: z

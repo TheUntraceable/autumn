@@ -2,12 +2,18 @@ import { z } from "zod/v4";
 import { FeatureSchema } from "../../featureModels/featureModels";
 import { RolloverConfigSchema } from "../../productV2Models/productItemModels/productItemModels";
 import { EntInterval } from "../intervals/entitlementInterval";
+import { type AiTokenAllowance, AiTokenAllowanceSchema } from "./aiTokenModels";
 
 export enum AllowanceType {
 	Fixed = "fixed",
 	Unlimited = "unlimited",
 	None = "none",
 }
+export enum AiTokenType {
+	Input = "input",
+	Output = "output",
+}
+export { AiTokenAllowanceSchema, type AiTokenAllowance };
 
 export const EntitlementSchema = z.object({
 	// Required fields - no .optional()
@@ -24,6 +30,9 @@ export const EntitlementSchema = z.object({
 
 	carry_from_previous: z.boolean().default(false).optional(),
 	entity_feature_id: z.string().nullish(),
+
+	// AI features: separate input/output token allowances
+	ai_allowance: AiTokenAllowanceSchema.nullish(),
 
 	// Part of create entitlement
 	org_id: z.string().optional(),
@@ -43,6 +52,7 @@ export const CreateEntitlementSchema = z.object({
 	interval_count: z.number().nullish(),
 	carry_from_previous: z.boolean().default(false),
 	entity_feature_id: z.string().nullish(),
+	ai_allowance: AiTokenAllowanceSchema.nullish(),
 	usage_limit: z.number().nullish().default(null),
 	rollover: RolloverConfigSchema.nullish(),
 });

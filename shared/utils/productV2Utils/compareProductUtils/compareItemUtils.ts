@@ -11,6 +11,7 @@ import type {
 	ProductItemConfig,
 	RolloverConfig,
 } from "../../../models/productV2Models/productItemModels/productItemModels.js";
+import { isAiTokenAllowance } from "../../featureUtils/aiUtils.js";
 import { intervalsSame } from "../../intervalUtils/priceIntervalUtils.js";
 import { entIntervalsSame } from "../../intervalUtils.js";
 import { itemToFeature } from "../productItemUtils/convertItemUtils.js";
@@ -114,6 +115,27 @@ const normalizeIncludedUsage = (value: number | "inf" | null | undefined) => {
 	return value;
 };
 
+const areIncludedUsageSame = ({
+	left,
+	right,
+}: {
+	left: ProductItem["included_usage"];
+	right: ProductItem["included_usage"];
+}) => {
+	const leftIsAi = isAiTokenAllowance(left);
+	const rightIsAi = isAiTokenAllowance(right);
+
+	if (leftIsAi || rightIsAi) {
+		if (!leftIsAi || !rightIsAi) return false;
+		return left.input === right.input && left.output === right.output;
+	}
+
+	return (
+		normalizeIncludedUsage(left as number | "inf" | null | undefined) ==
+		normalizeIncludedUsage(right as number | "inf" | null | undefined)
+	);
+};
+
 export const featureItemsAreSame = ({
 	item1,
 	item2,
@@ -130,9 +152,10 @@ export const featureItemsAreSame = ({
 		},
 		included_usage: {
 			// Normalize null/undefined to 0 for comparison since they're semantically equivalent
-			condition:
-				normalizeIncludedUsage(item1.included_usage) ==
-				normalizeIncludedUsage(item2.included_usage),
+			condition: areIncludedUsageSame({
+				left: item1.included_usage,
+				right: item2.included_usage,
+			}),
 			message: `Included usage different: ${item1.included_usage} != ${item2.included_usage}`,
 		},
 		interval: {
@@ -252,9 +275,10 @@ export const featurePriceItemsAreSame = ({
 	const entsSame = {
 		included_usage: {
 			// Normalize null/undefined to 0 for comparison since they're semantically equivalent
-			condition:
-				normalizeIncludedUsage(item1.included_usage) ==
-				normalizeIncludedUsage(item2.included_usage),
+			condition: areIncludedUsageSame({
+				left: item1.included_usage,
+				right: item2.included_usage,
+			}),
 			message: `Included usage different: ${item1.included_usage} != ${item2.included_usage}`,
 		},
 		usage_limit: {

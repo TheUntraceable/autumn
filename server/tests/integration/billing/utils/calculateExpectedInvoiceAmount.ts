@@ -84,7 +84,11 @@ const calculateItemAmount = ({
 	if (!usage) return 0;
 
 	const includedUsage =
-		item.included_usage === Infinite ? Infinity : (item.included_usage ?? 0);
+		item.included_usage === Infinite
+			? Infinity
+			: typeof item.included_usage === "number"
+				? item.included_usage
+				: 0;
 	const totalUsage = usage.value;
 
 	// For consumable items: calculate overage (usage beyond included)

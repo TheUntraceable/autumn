@@ -12,6 +12,7 @@ import {
 import { InternalError } from "../../../../api/models.js";
 import type { Feature } from "../../../../models/featureModels/featureModels.js";
 import { expandIncludes } from "../../../expandUtils.js";
+import { isAiTokenAllowance } from "../../../featureUtils/aiUtils.js";
 import {
 	isBooleanFeature,
 	isContUseFeature,
@@ -54,8 +55,13 @@ const itemToPlanFeaturePrice = ({
 		return null;
 	}
 
-	const includedUsage =
-		item.included_usage === Infinite ? 0 : (item.included_usage ?? 0);
+	const includedUsage = isAiTokenAllowance(item.included_usage)
+		? 0
+		: item.included_usage === Infinite
+			? 0
+			: typeof item.included_usage === "number"
+				? item.included_usage
+				: 0;
 	const maxPurchase = item.usage_limit
 		? item.usage_limit - includedUsage
 		: null;
@@ -156,8 +162,14 @@ export const productItemsToPlanItemsV1 = ({
 		}
 
 		// 1. Included balance (V1 uses "included", not "granted_balance")
-		const included =
-			item.included_usage === Infinite ? 0 : (item.included_usage ?? 0);
+		// For AI token allowance objects, V1 doesn't support them in the included field - return 0
+		const included = isAiTokenAllowance(item.included_usage)
+			? 0
+			: item.included_usage === Infinite
+				? 0
+				: typeof item.included_usage === "number"
+					? item.included_usage
+					: 0;
 
 		const reset = itemToReset({ item, feature });
 		const price = itemToPlanFeaturePrice({ item });
@@ -173,6 +185,9 @@ export const productItemsToPlanItemsV1 = ({
 			feature_id: item.feature_id,
 			feature: apiFeature,
 			included: included,
+			ai_allowance: isAiTokenAllowance(item.included_usage)
+				? item.included_usage
+				: undefined,
 			unlimited: item.included_usage === Infinite,
 
 			reset,

@@ -8,6 +8,7 @@ import {
 	type FullProduct,
 	formatAmount,
 	Infinite,
+	isAiTokenAllowance,
 	numberWithCommas,
 	type Organization,
 	type ProductItem,
@@ -183,9 +184,11 @@ const featureToPricecnItem = ({
 	const includedUsageTxt =
 		item.included_usage === Infinite
 			? "Unlimited "
-			: nullish(item.included_usage) || item.included_usage === 0
+			: isAiTokenAllowance(item.included_usage)
 				? ""
-				: `${numberWithCommas(item.included_usage!)} `;
+				: nullish(item.included_usage) || item.included_usage === 0
+					? ""
+					: `${numberWithCommas(item.included_usage!)} `;
 
 	return {
 		primaryText: `${includedUsageTxt}${featureName}`,
@@ -220,7 +223,11 @@ const featurePricetoPricecnItem = ({
 	});
 
 	let includedUsageStr = "";
-	if (notNullish(item.included_usage) && (item.included_usage as number) > 0) {
+	if (
+		notNullish(item.included_usage) &&
+		!isAiTokenAllowance(item.included_usage) &&
+		(item.included_usage as number) > 0
+	) {
 		const includedUsage = numberWithCommas(item.included_usage as number);
 		if (withNameAfterIncluded) {
 			includedUsageStr = `${includedUsage} ${includedFeatureName}`;

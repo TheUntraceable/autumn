@@ -120,8 +120,16 @@ export function buildEditsForItem({
 			});
 		}
 
-		const oldUsage = originalItem.included_usage ?? 0;
-		const newUsage = updatedItem.included_usage ?? 0;
+		const oldUsage =
+			typeof originalItem.included_usage === "number" ||
+			originalItem.included_usage === "inf"
+				? originalItem.included_usage
+				: 0;
+		const newUsage =
+			typeof updatedItem.included_usage === "number" ||
+			updatedItem.included_usage === "inf"
+				? updatedItem.included_usage
+				: 0;
 		if (oldUsage !== newUsage) {
 			const formatUsageValue = (val: string | number) =>
 				val === "inf" ? "unlimited" : String(val);

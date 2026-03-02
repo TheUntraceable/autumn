@@ -1,12 +1,12 @@
 import { BillingMethod } from "@api/products/components/billingMethod";
 import { RolloverExpiryDurationType } from "@models/productModels/durationTypes/rolloverExpiryDurationType";
+import { AiTokenAllowanceSchema } from "@models/productModels/entModels/entModels";
 import { BillingInterval } from "@models/productModels/intervals/billingInterval";
 import { ResetInterval } from "@models/productModels/intervals/resetInterval";
 import {
 	TierBehavior,
 	UsageTierSchema,
 } from "@models/productModels/priceModels/priceConfig/usagePriceConfig";
-
 import {
 	OnDecrease,
 	OnIncrease,
@@ -21,6 +21,10 @@ export const CreatePlanItemParamsV1Schema = z
 		included: z.number().optional().meta({
 			description:
 				"Number of free units included. Balance resets to this each interval for consumable features.",
+		}),
+		ai_allowance: AiTokenAllowanceSchema.optional().meta({
+			description:
+				"AI token allowance (input/output tokens). Use this for AI features instead of 'included'.",
 		}),
 		unlimited: z.boolean().optional().meta({
 			description: "If true, customer has unlimited access to this feature.",

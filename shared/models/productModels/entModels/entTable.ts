@@ -9,7 +9,7 @@ import {
 	text,
 	unique,
 } from "drizzle-orm/pg-core";
-import type { RolloverConfig } from "../../../index";
+import type { AiTokenAllowance, RolloverConfig } from "../../../index";
 import { features } from "../../featureModels/featureTable";
 import { products } from "../productTable";
 
@@ -29,6 +29,9 @@ export const entitlements = pgTable(
 
 		carry_from_previous: boolean("carry_from_previous").default(false),
 		entity_feature_id: text("entity_feature_id").default(sql`null`),
+
+		// AI features: separate input/output token allowances
+		ai_allowance: jsonb("ai_allowance").$type<AiTokenAllowance>(),
 
 		// Optional fields
 		org_id: text("org_id"),

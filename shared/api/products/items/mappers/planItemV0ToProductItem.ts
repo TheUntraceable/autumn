@@ -124,6 +124,13 @@ export const planItemV0ToProductItem = ({
 
 	const resetUsageWhenEnabled = featureUtils.isConsumable(feature);
 
+	// Use ai_allowance if present, otherwise use granted_balance
+	const includedUsage = planItem.ai_allowance
+		? planItem.ai_allowance
+		: planItem.unlimited
+			? Infinite
+			: planItem.granted_balance;
+
 	return ProductItemSchema.parse({
 		type,
 
@@ -135,7 +142,7 @@ export const planItemV0ToProductItem = ({
 			targetVersion: new ApiVersionClass(ApiVersion.V1_2),
 		}) as unknown as ApiFeatureV0,
 
-		included_usage: planItem.unlimited ? Infinite : planItem.granted_balance,
+		included_usage: includedUsage,
 
 		interval,
 		interval_count: planItem.reset?.interval_count,

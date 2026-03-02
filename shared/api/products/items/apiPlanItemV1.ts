@@ -2,6 +2,7 @@ import { ApiFeatureV0Schema } from "@api/features/prevVersions/apiFeatureV0.js";
 import { BillingMethod } from "@api/products/components/billingMethod.js";
 import { DisplaySchema } from "@api/products/components/display.js";
 import { RolloverExpiryDurationType } from "@models/productModels/durationTypes/rolloverExpiryDurationType.js";
+import { AiTokenAllowanceSchema } from "@models/productModels/entModels/entModels.js";
 import { BillingInterval } from "@models/productModels/intervals/billingInterval.js";
 import { ResetInterval } from "@models/productModels/intervals/resetInterval.js";
 import {
@@ -63,6 +64,10 @@ export const ApiPlanItemV1Schema = z
 		included: z.number().meta({
 			description:
 				"Number of free units included. For consumable features, balance resets to this number each interval.",
+		}),
+		ai_allowance: AiTokenAllowanceSchema.optional().meta({
+			description:
+				"AI token allowance (input/output tokens). Present for AI features that have token-based included usage.",
 		}),
 		unlimited: z.boolean().meta({
 			description: "Whether the customer has unlimited access to this feature.",

@@ -1,4 +1,5 @@
 import { ApiFeatureV0Schema } from "@api/features/prevVersions/apiFeatureV0.js";
+import { AiTokenAllowanceSchema } from "@models/productModels/entModels/entModels.js";
 import { ProductItemInterval } from "@models/productModels/intervals/productItemInterval.js";
 import { TierBehavior } from "@models/productModels/priceModels/priceConfig/usagePriceConfig.js";
 import { Infinite } from "@models/productModels/productEnums.js";
@@ -40,9 +41,12 @@ export const ApiProductItemV0Schema = z
 			internal: true,
 		}),
 
-		included_usage: z.number().or(z.literal(Infinite)).nullish().meta({
-			description: "The amount of usage included for this feature.",
-		}),
+		included_usage: z
+			.union([z.number(), z.literal(Infinite), AiTokenAllowanceSchema])
+			.nullish()
+			.meta({
+				description: "The amount of usage included for this feature.",
+			}),
 
 		interval: z.enum(ProductItemInterval).nullish().meta({
 			description:

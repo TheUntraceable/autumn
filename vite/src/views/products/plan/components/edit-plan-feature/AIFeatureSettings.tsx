@@ -7,9 +7,15 @@ import { useProductItemContext } from "@/views/products/product/product-item/Pro
 export function AIFeatureSettings() {
 	const { item, setItem } = useProductItemContext();
 
-	if (!item) return null;
+	if (
+		!item ||
+		typeof item.included_usage === "number" ||
+		item.included_usage === "inf"
+	)
+		return null;
 
-	const includedTokens = item.included_usage ?? 0;
+	const inputTokens = item.included_usage?.input || 0;
+	const outputTokens = item.included_usage?.output || 0;
 	const allowOverusage = item.config?.allow_overusage ?? false;
 
 	return (
@@ -26,13 +32,13 @@ export function AIFeatureSettings() {
 							<Input
 								type="number"
 								placeholder="e.g. 100,000"
-								value={includedTokens || ""}
+								value={inputTokens}
 								onChange={(e) => {
 									const value = e.target.value;
 									const numValue = value === "" ? 0 : parseInt(value) || 0;
 									setItem({
 										...item,
-										included_usage: numValue,
+										included_usage: { input: numValue, output: outputTokens },
 									});
 								}}
 								className="w-xs"
@@ -43,13 +49,13 @@ export function AIFeatureSettings() {
 							<Input
 								type="number"
 								placeholder="e.g. 100,000"
-								value={includedTokens || ""}
+								value={outputTokens}
 								onChange={(e) => {
 									const value = e.target.value;
 									const numValue = value === "" ? 0 : parseInt(value) || 0;
 									setItem({
 										...item,
-										included_usage: numValue,
+										included_usage: { input: inputTokens, output: numValue },
 									});
 								}}
 								className="w-xs"

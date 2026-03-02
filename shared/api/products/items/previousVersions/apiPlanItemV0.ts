@@ -1,6 +1,7 @@
 import { ApiFeatureV0Schema } from "@api/features/prevVersions/apiFeatureV0.js";
 import { DisplaySchema } from "@api/products/components/display.js";
 import { RolloverExpiryDurationType } from "@models/productModels/durationTypes/rolloverExpiryDurationType.js";
+import { AiTokenAllowanceSchema } from "@models/productModels/entModels/entModels";
 import { BillingInterval } from "@models/productModels/intervals/billingInterval.js";
 import { ResetInterval } from "@models/productModels/intervals/resetInterval.js";
 import {
@@ -70,6 +71,9 @@ export const ApiPlanItemV0Schema = z
 			internal: true,
 		}),
 		price_id: z.string().optional().meta({
+			internal: true,
+		}),
+		ai_allowance: AiTokenAllowanceSchema.optional().meta({
 			internal: true,
 		}),
 	})

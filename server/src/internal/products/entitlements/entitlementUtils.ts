@@ -1,6 +1,7 @@
 /** biome-ignore-all lint/suspicious/noDoubleEquals: != allowed for comparison... */
 
 import {
+	type AiTokenAllowance,
 	AllowanceType,
 	EntInterval,
 	type Entitlement,
@@ -112,6 +113,17 @@ const rolloversAreSame = ({
 	);
 };
 
+const aiAllowancesAreSame = (
+	ai1?: AiTokenAllowance | null,
+	ai2?: AiTokenAllowance | null,
+) => {
+	if (!ai1 && !ai2) return true;
+	if (!ai1 && ai2) return false;
+	if (ai1 && !ai2) return false;
+
+	return ai1!.input === ai2!.input && ai1!.output === ai2!.output;
+};
+
 export const entsAreSame = (ent1: Entitlement, ent2: Entitlement) => {
 	// 1. Check if they have same internal_feature_id
 	if (ent1.internal_feature_id !== ent2.internal_feature_id) {
@@ -163,6 +175,10 @@ export const entsAreSame = (ent1: Entitlement, ent2: Entitlement) => {
 				rollover2: ent2.rollover,
 			}),
 			message: `Rollover different: ${ent1.rollover} !== ${ent2.rollover}`,
+		},
+		aiAllowance: {
+			condition: !aiAllowancesAreSame(ent1.ai_allowance, ent2.ai_allowance),
+			message: `AI Allowance different: ${ent1.ai_allowance} !== ${ent2.ai_allowance}`,
 		},
 	};
 

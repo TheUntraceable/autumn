@@ -45,7 +45,7 @@ export interface AgentFeature {
 
 export interface AgentProductItem {
 	feature_id?: string | null;
-	included_usage?: number | "inf" | null;
+	included_usage?: number | "inf" | null | { input: number; output: number };
 	interval?: string | null;
 	price?: number | null;
 	tiers?: Array<{ to: number | "inf"; amount: number }> | null;
