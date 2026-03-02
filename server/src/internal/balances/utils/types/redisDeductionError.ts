@@ -18,17 +18,25 @@ export const FALLBACK_ERROR_CODES = [
 /** Error thrown by Redis deduction operations */
 export class RedisDeductionError extends Error {
 	code: RedisDeductionErrorCode;
+	remainingInput?: number;
+	remainingOutput?: number;
 
 	constructor({
 		message,
 		code,
+		remainingInput,
+		remainingOutput,
 	}: {
 		message: string;
 		code: RedisDeductionErrorCode;
+		remainingInput?: number;
+		remainingOutput?: number;
 	}) {
 		super(message);
 		this.name = "RedisDeductionError";
 		this.code = code;
+		this.remainingInput = remainingInput;
+		this.remainingOutput = remainingOutput;
 	}
 
 	/** Check if this error should trigger a Postgres fallback */

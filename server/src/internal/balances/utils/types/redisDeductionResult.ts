@@ -11,6 +11,8 @@ export interface LuaDeductionResult {
 	updates: Record<string, DeductionUpdate>;
 	rollover_updates: Record<string, RolloverUpdate>;
 	remaining: number;
+	remaining_input?: number;
+	remaining_output?: number;
 	error?: string;
 	feature_id?: string;
 	logs?: string[];

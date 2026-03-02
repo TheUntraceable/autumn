@@ -1,4 +1,5 @@
 import type {
+	AiTokenAllowance,
 	CustomerEntitlementFilters,
 	FullCusEntWithFullCusProduct,
 	FullCustomer,
@@ -47,6 +48,8 @@ export type CustomerEntitlementDeduction = {
 	usage_allowed: boolean;
 	min_balance: number | undefined;
 	max_balance: number;
+	/** For AI features: the starting (reset) balance for input/output tokens */
+	ai_max_balance?: AiTokenAllowance;
 };
 
 /** Rollover with credit cost for deduction */

@@ -1,4 +1,5 @@
 import type {
+	AiTokenAllowance,
 	EntityBalance,
 	InsertReplaceable,
 	Replaceable,
@@ -14,4 +15,6 @@ export interface DeductionUpdate {
 	additional_deducted?: number;
 	newReplaceables?: InsertReplaceable[];
 	deletedReplaceables?: Replaceable[];
+	/** For AI features: updated input/output token balance after deduction */
+	ai_balance?: AiTokenAllowance;
 }
