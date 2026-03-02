@@ -79,7 +79,12 @@ export const executeRedisDeduction = async ({
 	});
 
 	for (const deduction of deductions) {
-		const { feature, deduction: toDeduct, targetBalance } = deduction;
+		const {
+			feature,
+			deduction: toDeduct,
+			targetBalance,
+			aiDeduction,
+		} = deduction;
 
 		const {
 			customerEntitlementDeductions,
@@ -108,6 +113,7 @@ export const executeRedisDeduction = async ({
 			alter_granted_balance: options.alterGrantedBalance,
 			overage_behaviour: options.overageBehaviour,
 			feature_id: feature.id,
+			ai_deduction: aiDeduction ?? null,
 		};
 
 		const result = await tryRedisWrite(() =>
@@ -133,6 +139,8 @@ export const executeRedisDeduction = async ({
 			throw new RedisDeductionError({
 				message: `Redis deduction failed: ${resultJson.error}`,
 				code: resultJson.error as RedisDeductionErrorCode,
+				remainingInput: resultJson.remaining_input,
+				remainingOutput: resultJson.remaining_output,
 			});
 		}
 

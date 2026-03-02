@@ -52,6 +52,7 @@ export const executeResetCache = async ({
 				clearing && clearing.deletedIds.length > 0 ? clearing.deletedIds : null,
 			new_replaceables: null,
 			deleted_replaceable_ids: null,
+			ai_balance: r.ai_balance ?? null,
 		};
 	});
 

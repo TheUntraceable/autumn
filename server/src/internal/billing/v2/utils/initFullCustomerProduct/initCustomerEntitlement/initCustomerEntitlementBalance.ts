@@ -1,4 +1,5 @@
 import {
+	type AiTokenAllowance,
 	type EntitlementWithFeature,
 	type EntityBalance,
 	entToOptions,
@@ -6,6 +7,7 @@ import {
 	type FeatureOptions,
 	type FullCustomer,
 	type FullProduct,
+	getAiStartingBalance,
 	getStartingBalance,
 	type InitFullCustomerProductContext,
 	isBooleanEntitlement,
@@ -25,13 +27,23 @@ export const initCustomerEntitlementBalance = ({
 				featureQuantities: FeatureOptions[];
 		  };
 	entitlement: EntitlementWithFeature;
-}): { balance: number; entities: Record<string, EntityBalance> | null } => {
+}): {
+	balance: number;
+	entities: Record<string, EntityBalance> | null;
+	aiBalance: AiTokenAllowance | null;
+} => {
 	// 1. If entitlement is boolean or unlimited, return 0
 	const isBoolean = isBooleanEntitlement({ entitlement });
 	const isUnlimited = isUnlimitedEntitlement({ entitlement });
 
 	if (isBoolean || isUnlimited) {
-		return { balance: 0, entities: null };
+		return { balance: 0, entities: null, aiBalance: null };
+	}
+
+	// 2. If AI feature, use ai_allowance for balance
+	const aiBalance = getAiStartingBalance({ entitlement });
+	if (aiBalance) {
+		return { balance: 0, entities: null, aiBalance };
 	}
 
 	// 2. Get starting balance
@@ -60,5 +72,5 @@ export const initCustomerEntitlementBalance = ({
 		startingBalance,
 	});
 
-	return { balance: startingBalance, entities };
+	return { balance: startingBalance, entities, aiBalance: null };
 };

@@ -28,6 +28,7 @@ const toResetParam = ({
 		adjustment: updates.adjustment,
 		entities: updates.entities,
 		next_reset_at: updates.next_reset_at,
+		ai_balance: updates.ai_balance,
 		rollover_insert: firstRollover,
 	};
 };

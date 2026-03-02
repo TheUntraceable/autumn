@@ -81,7 +81,12 @@ export const executePostgresDeduction = async ({
 
 		// Need to deduct from customer entitlement...
 		for (const deduction of deductions) {
-			const { feature, deduction: toDeduct, targetBalance } = deduction;
+			const {
+				feature,
+				deduction: toDeduct,
+				targetBalance,
+				aiDeduction,
+			} = deduction;
 
 			const {
 				customerEntitlementDeductions,
@@ -98,35 +103,68 @@ export const executePostgresDeduction = async ({
 			if (customerEntitlements.length === 0 || unlimitedFeatureIds.length > 0)
 				continue;
 
-			// Call the stored function to deduct from entitlements with credit costs
-			const result = await db.execute(
-				sql`SELECT * FROM deduct_from_cus_ents(
-				${JSON.stringify({
-					sorted_entitlements: customerEntitlementDeductions,
-					amount_to_deduct: toDeduct ?? null,
-					target_balance: targetBalance ?? null,
-					target_entity_id: entityId || null,
-					rollovers: rollovers.length > 0 ? rollovers : null,
-					cus_ent_ids: customerEntitlements.map((ce) => ce.id),
-					skip_additional_balance: resolvedOptions.skipAdditionalBalance,
-					alter_granted_balance: resolvedOptions.alterGrantedBalance,
-					overage_behaviour: resolvedOptions.overageBehaviour,
-					feature_id: feature.id,
-				})}::jsonb
-			)`,
-			);
-
-			// Parse the JSONB result
-			const resultJson = result[0]?.deduct_from_cus_ents as {
+			let resultJson: {
 				updates: Record<string, DeductionUpdate>;
 				remaining: number;
 				rollover_updates: RolloverOverwrite[];
 			};
 
-			if (!resultJson) {
-				throw new InternalError({
-					message: "Failed to deduct from entitlements",
-				});
+			if (aiDeduction) {
+				// AI deduction path: deduct input/output tokens from ai_balance
+				const result = await db.execute(
+					sql`SELECT * FROM deduct_ai_from_cus_ents(
+					${JSON.stringify({
+						sorted_entitlements: customerEntitlementDeductions,
+						ai_deduction: aiDeduction,
+						cus_ent_ids: customerEntitlements.map((ce) => ce.id),
+						overage_behaviour: resolvedOptions.overageBehaviour,
+						overage_behavior_is_allow:
+							resolvedOptions.alterGrantedBalance ||
+							resolvedOptions.overageBehaviour === "allow",
+						feature_id: feature.id,
+					})}::jsonb
+				)`,
+				);
+
+				const parsed = result[0]?.deduct_ai_from_cus_ents as
+					| typeof resultJson
+					| undefined;
+
+				if (!parsed) {
+					throw new InternalError({
+						message: "Failed to deduct AI tokens from entitlements",
+					});
+				}
+				resultJson = parsed;
+			} else {
+				// Standard deduction path
+				const result = await db.execute(
+					sql`SELECT * FROM deduct_from_cus_ents(
+					${JSON.stringify({
+						sorted_entitlements: customerEntitlementDeductions,
+						amount_to_deduct: toDeduct ?? null,
+						target_balance: targetBalance ?? null,
+						target_entity_id: entityId || null,
+						rollovers: rollovers.length > 0 ? rollovers : null,
+						cus_ent_ids: customerEntitlements.map((ce) => ce.id),
+						skip_additional_balance: resolvedOptions.skipAdditionalBalance,
+						alter_granted_balance: resolvedOptions.alterGrantedBalance,
+						overage_behaviour: resolvedOptions.overageBehaviour,
+						feature_id: feature.id,
+					})}::jsonb
+				)`,
+				);
+
+				const parsed = result[0]?.deduct_from_cus_ents as
+					| typeof resultJson
+					| undefined;
+
+				if (!parsed) {
+					throw new InternalError({
+						message: "Failed to deduct from entitlements",
+					});
+				}
+				resultJson = parsed;
 			}
 
 			const { updates, rollover_updates } = resultJson;

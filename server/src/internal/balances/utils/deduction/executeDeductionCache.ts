@@ -81,6 +81,7 @@ export const syncCustomerEntitlementUpdatesToCache = async ({
 				new_replaceables: update.newReplaceables ?? null,
 				deleted_replaceable_ids:
 					update.deletedReplaceables?.map((r) => r.id) ?? null,
+				ai_balance: update.ai_balance ?? null,
 			};
 		});
 

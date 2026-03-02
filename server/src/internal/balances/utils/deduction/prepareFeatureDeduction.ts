@@ -1,4 +1,5 @@
 import {
+	cusEntToAiStartingBalance,
 	cusEntToStartingBalance,
 	type FullCustomer,
 	fullCustomerToCustomerEntitlements,
@@ -85,6 +86,7 @@ export const prepareFeatureDeduction = ({
 				isFreeCustomerEntitlement(ce) && isAllocatedCustomerEntitlement(ce);
 
 			const resetBalance = cusEntToStartingBalance({ cusEnt: ce });
+			const aiResetBalance = cusEntToAiStartingBalance({ cusEnt: ce });
 
 			const isFreeAllocatedUsageAllowed =
 				isFreeAllocated && overageBehaviour !== "reject";
@@ -96,6 +98,7 @@ export const prepareFeatureDeduction = ({
 				usage_allowed: ce.usage_allowed || isFreeAllocatedUsageAllowed,
 				min_balance: notNullish(maxOverage) ? -maxOverage : undefined,
 				max_balance: resetBalance,
+				ai_max_balance: aiResetBalance ?? undefined,
 			};
 		});
 

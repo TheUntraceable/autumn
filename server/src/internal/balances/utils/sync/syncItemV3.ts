@@ -1,4 +1,5 @@
 import {
+	type AiTokenAllowance,
 	type EntityBalance,
 	type EntityRolloverBalance,
 	type FullCustomer,
@@ -83,6 +84,7 @@ interface SyncEntry {
 	next_reset_at: number | null;
 	entity_count: number;
 	cache_version: number | null;
+	ai_balance: AiTokenAllowance | null;
 }
 
 interface RolloverSyncEntry {
@@ -127,6 +129,7 @@ const buildSyncEntries = ({
 			next_reset_at: cusEnt.next_reset_at ?? null,
 			entity_count: entityCount,
 			cache_version: cusEnt.cache_version ?? 0,
+			ai_balance: cusEnt.ai_balance ?? null,
 		});
 	}
 

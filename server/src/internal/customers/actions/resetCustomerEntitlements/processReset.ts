@@ -1,9 +1,11 @@
 import {
+	type AiTokenAllowance,
 	cusEntToOptions,
 	type EntInterval,
 	type EntityBalance,
 	type FullCusEntWithFullCusProduct,
 	type FullCustomerEntitlement,
+	getAiStartingBalance,
 	getStartingBalance,
 	isLifetimeEntitlement,
 	isUnlimitedEntitlement,
@@ -21,6 +23,7 @@ export type ResetUpdates = {
 	adjustment: number;
 	entities: Record<string, EntityBalance> | null;
 	next_reset_at: number;
+	ai_balance: AiTokenAllowance | null;
 };
 
 export type ProcessResetResult = {
@@ -53,6 +56,11 @@ export const processReset = async ({
 	const resetBalance = getStartingBalance({
 		entitlement: cusEnt.entitlement,
 		options,
+		productQuantity: cusProduct?.quantity ?? 1,
+	});
+
+	const aiResetBalance = getAiStartingBalance({
+		entitlement: cusEnt.entitlement,
 		productQuantity: cusProduct?.quantity ?? 1,
 	});
 
@@ -95,6 +103,7 @@ export const processReset = async ({
 					adjustment: 0,
 					entities: resetBalanceUpdate.entities,
 					next_reset_at: nextResetAt,
+					ai_balance: aiResetBalance,
 				}
 			: {
 					balance: resetBalanceUpdate.balance,
@@ -102,6 +111,7 @@ export const processReset = async ({
 					adjustment: 0,
 					entities: null,
 					next_reset_at: nextResetAt,
+					ai_balance: aiResetBalance,
 				};
 
 	let rolloverInsert:

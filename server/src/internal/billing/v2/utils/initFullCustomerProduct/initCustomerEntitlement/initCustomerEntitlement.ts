@@ -23,7 +23,7 @@ export const initCustomerEntitlement = ({
 	entitlement: EntitlementWithFeature;
 	cusProductId: string;
 }): CustomerEntitlement => {
-	const { balance, entities } = initCustomerEntitlementBalance({
+	const { balance, entities, aiBalance } = initCustomerEntitlementBalance({
 		initContext,
 		entitlement,
 	});
@@ -64,6 +64,7 @@ export const initCustomerEntitlement = ({
 		additional_balance: 0,
 		adjustment: 0,
 		entities,
+		ai_balance: aiBalance ?? null,
 		usage_allowed: usageAllowed,
 		next_reset_at: nextResetAt,
 

@@ -44,6 +44,7 @@ export const applyDeductionUpdateToFullCustomer = ({
 					entities: update.entities,
 					adjustment: update.adjustment,
 					replaceables,
+					...(update.ai_balance != null && { ai_balance: update.ai_balance }),
 				};
 				return; // Found and updated, exit early
 			}
@@ -80,6 +81,7 @@ export const applyDeductionUpdateToFullCustomer = ({
 				entities: update.entities,
 				adjustment: update.adjustment,
 				replaceables,
+				...(update.ai_balance != null && { ai_balance: update.ai_balance }),
 			};
 			return; // Found and updated, exit early
 		}

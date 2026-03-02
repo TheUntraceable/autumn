@@ -63,6 +63,7 @@ export const applyResetResults = async ({
 		original.adjustment = updates.adjustment;
 		if (updates.entities !== null) original.entities = updates.entities;
 		original.next_reset_at = updates.next_reset_at;
+		if (updates.ai_balance !== null) original.ai_balance = updates.ai_balance;
 
 		if (!result.rolloverInsert) continue;
 

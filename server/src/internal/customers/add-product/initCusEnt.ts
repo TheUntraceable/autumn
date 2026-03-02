@@ -12,6 +12,7 @@ import {
 	type FreeTrial,
 	type FullCusProduct,
 	type FullCustomerEntitlement,
+	getAiStartingBalance,
 	getStartingBalance,
 	type InsertCustomerEntitlement,
 	type Price,
@@ -81,7 +82,13 @@ const initCusEntBalance = ({
 	carryExistingUsages?: boolean;
 }) => {
 	if (entitlement.feature.type === FeatureType.Boolean) {
-		return { newBalance: null, newEntities: null };
+		return { newBalance: null, newAiBalance: null, newEntities: null };
+	}
+
+	// For AI features with separate input/output allowances
+	const aiBalance = getAiStartingBalance({ entitlement });
+	if (aiBalance) {
+		return { newBalance: null, newAiBalance: aiBalance, newEntities: null };
 	}
 
 	const resetBalance = getStartingBalance({
@@ -96,7 +103,7 @@ const initCusEntBalance = ({
 		resetBalance,
 	});
 
-	return { newBalance: resetBalance, newEntities };
+	return { newBalance: resetBalance, newAiBalance: null, newEntities };
 };
 
 // MAIN FUNCTION
@@ -142,7 +149,7 @@ export const initCusEntitlement = ({
 	expires_at?: number | null;
 }): InsertCustomerEntitlement => {
 	now = now || Date.now();
-	let { newBalance, newEntities } = initCusEntBalance({
+	let { newBalance, newAiBalance, newEntities } = initCusEntBalance({
 		entitlement,
 		options,
 		relatedPrice,
@@ -203,6 +210,7 @@ export const initCusEntitlement = ({
 		additional_balance: 0,
 		adjustment: 0,
 		entities: newEntities,
+		ai_balance: newAiBalance,
 		usage_allowed: usageAllowed,
 		next_reset_at: nextResetAtValue,
 		expires_at: expires_at ?? null,
