@@ -95,6 +95,11 @@ for _, reset in ipairs(resets) do
         redis.call('JSON.SET', cache_key, base_path .. '.entities', cjson.encode(reset.entities))
       end
 
+      -- Set ai_balance if provided (AI feature token balance reset)
+      if not is_nil(reset.ai_balance) then
+        redis.call('JSON.SET', cache_key, base_path .. '.ai_balance', cjson.encode(reset.ai_balance))
+      end
+
       -- Append rollover if provided
       if not is_nil(reset.rollover_insert) then
         local rollover_json = cjson.encode(reset.rollover_insert)

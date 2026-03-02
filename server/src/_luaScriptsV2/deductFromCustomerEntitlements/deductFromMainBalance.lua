@@ -258,3 +258,90 @@ local function deduct_from_main_balance(params)
   
   return deducted
 end
+
+-- ============================================================================
+-- DEDUCT AI BALANCE
+-- Deducts input and output tokens from ai_balance on a customer_entitlement.
+-- Each token type (input/output) is deducted independently against its own balance.
+--
+-- params:
+--   context: table (context object from init_context)
+--   ent_id: string (customer_entitlement id)
+--   ai_deduction: { input: number, output: number }
+--   ai_max_balance: { input: number, output: number } | nil (reset/max balance for refunds)
+--   pass_number: number (1 or 2)
+--   usage_allowed: boolean
+--   overage_behavior_is_allow: boolean
+--   alter_granted_balance: boolean
+--   log_prefix: string
+--
+-- Returns: { input_deducted, output_deducted }
+-- ============================================================================
+local function deduct_ai_balance(params)
+  local context = params.context
+  local ent_id = params.ent_id
+  local ent_data = context.customer_entitlements[ent_id]
+  local logger = context.logger
+  local prefix = params.log_prefix or ""
+  
+  if not ent_data or not ent_data.ai_balance then
+    return { input_deducted = 0, output_deducted = 0 }
+  end
+  
+  local ai_bal = ent_data.ai_balance
+  local ai_deduction = params.ai_deduction
+  local ai_max = params.ai_max_balance
+  local base_path = ent_data.base_path
+  
+  local result = { input_deducted = 0, output_deducted = 0 }
+  
+  -- Process each token type independently
+  for _, token_type in ipairs({'input', 'output'}) do
+    local amount = ai_deduction[token_type] or 0
+    if amount == 0 then
+      -- nothing to do for this token type
+    else
+      local balance = ai_bal[token_type] or 0
+      local max_balance_val = ai_max and ai_max[token_type] or nil
+      
+      local calc_params = {
+        pass_number = params.pass_number,
+        overage_behavior_is_allow = params.overage_behavior_is_allow,
+        max_balance = max_balance_val,
+        min_balance = nil, -- AI features don't have min_balance/overage yet
+        adjustment = 0,
+      }
+      
+      local to_change = calculate_change(balance, amount, calc_params)
+      
+      logger.log("%s AI %s: balance=%s, amount=%s, to_change=%s", prefix, token_type, balance, amount, to_change)
+      
+      if to_change ~= 0 then
+        -- Queue the write
+        local delta = -to_change
+        if token_type == 'input' then
+          queue_ai_balance_update({
+            context = context,
+            path = base_path,
+            input_delta = delta,
+            output_delta = 0,
+          })
+          result.input_deducted = to_change
+        else
+          queue_ai_balance_update({
+            context = context,
+            path = base_path,
+            input_delta = 0,
+            output_delta = delta,
+          })
+          result.output_deducted = to_change
+        end
+        
+        -- Update in-memory
+        ai_bal[token_type] = balance + delta
+      end
+    end
+  end
+  
+  return result
+end

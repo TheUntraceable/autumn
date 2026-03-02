@@ -99,3 +99,26 @@ local function read_current_entities(cache_key, base_path)
   end
   return decoded
 end
+
+-- ============================================================================
+-- HELPER: Read AI balance from Redis ({ input, output } or nil)
+-- ============================================================================
+local function read_current_ai_balance(cache_key, base_path)
+  local ai_path = base_path .. '.ai_balance'
+  local result = redis.call('JSON.GET', cache_key, ai_path)
+  if not result or result == cjson.null then
+    return nil
+  end
+  local decoded = cjson.decode(result)
+  -- JSONPath returns an array of matches, extract the first element
+  if type(decoded) == 'table' and decoded[1] ~= nil and type(decoded[1]) == 'table' then
+    decoded = decoded[1]
+  end
+  if type(decoded) ~= 'table' then
+    return nil
+  end
+  return {
+    input = safe_number(decoded.input),
+    output = safe_number(decoded.output),
+  }
+end

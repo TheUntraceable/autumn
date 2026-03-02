@@ -10,6 +10,7 @@
 --     - adjustment: numeric
 --     - entities: jsonb (null if non-entity)
 --     - next_reset_at: bigint (new next_reset_at value)
+--     - ai_balance: jsonb (AI token balance: { input: number, output: number } or null)
 --     - rollover_insert: jsonb object or null, with fields:
 --         id, cus_ent_id, balance, usage, expires_at, entities
 --
@@ -44,6 +45,7 @@ DECLARE
   new_adjustment numeric;
   new_entities jsonb;
   new_next_reset_at bigint;
+  new_ai_balance jsonb;
   rollover_obj jsonb;
 
   db_next_reset_at bigint;
@@ -64,6 +66,7 @@ BEGIN
     new_adjustment := (reset_obj->>'adjustment')::numeric;
     new_entities := reset_obj->'entities';
     new_next_reset_at := (reset_obj->>'next_reset_at')::bigint;
+    new_ai_balance := reset_obj->'ai_balance';
     rollover_obj := reset_obj->'rollover_insert';
 
     -- Lock and read the single row
@@ -91,10 +94,11 @@ BEGIN
       additional_balance = COALESCE(new_additional_balance, ce.additional_balance),
       adjustment = COALESCE(new_adjustment, ce.adjustment),
       entities = COALESCE(new_entities, ce.entities),
-      next_reset_at = new_next_reset_at
+      next_reset_at = new_next_reset_at,
+      ai_balance = COALESCE(new_ai_balance, ce.ai_balance)
     WHERE ce.id = ent_id
     RETURNING ce.balance, ce.additional_balance, ce.adjustment, ce.entities,
-              ce.next_reset_at, ce.cache_version
+              ce.next_reset_at, ce.cache_version, ce.ai_balance
     INTO updated_row;
 
     -- Insert rollover row if provided

@@ -55,3 +55,26 @@ local function get_total_balance(params)
   
   return total_balance
 end
+
+-- ============================================================================
+-- GET TOTAL AI BALANCE
+-- Returns { input, output } totals across all entitlements with ai_balance
+-- ============================================================================
+local function get_total_ai_balance(params)
+  local context = params.context
+  local sorted_entitlements = params.sorted_entitlements
+  
+  local total = { input = 0, output = 0 }
+  
+  for _, ent_obj in ipairs(sorted_entitlements) do
+    local ent_id = ent_obj.customer_entitlement_id
+    local ent_data = context.customer_entitlements[ent_id]
+    
+    if ent_data and ent_data.ai_balance then
+      total.input = total.input + safe_number(ent_data.ai_balance.input)
+      total.output = total.output + safe_number(ent_data.ai_balance.output)
+    end
+  end
+  
+  return total
+end

@@ -59,6 +59,7 @@ local skip_additional_balance = params.skip_additional_balance or false
 local alter_granted_balance = params.alter_granted_balance or false
 local overage_behaviour = params.overage_behaviour or 'cap'
 local feature_id = params.feature_id
+local ai_deduction = params.ai_deduction  -- { input: number, output: number } or nil
 
 -- Compute overage_behavior_is_allow once
 local overage_behavior_is_allow = alter_granted_balance or overage_behaviour == 'allow'
@@ -95,6 +96,140 @@ local context = init_context({
   full_customer = full_customer,
 })
 
+-- ============================================================================
+-- HELPER: Round number to eliminate floating point errors
+-- ============================================================================
+local function round_to_precision(num, decimals)
+  local mult = 10 ^ (decimals or 10)
+  return math.floor(num * mult + 0.5) / mult
+end
+
+local logger = context.logger
+
+-- ============================================================================
+-- AI DEDUCTION PATH
+-- When ai_deduction is present, deduct input/output tokens separately from
+-- ai_balance instead of the scalar balance field.
+-- ============================================================================
+if not is_nil(ai_deduction) and ai_deduction ~= false then
+  logger.log("=== AI DEDUCTION START ===")
+  logger.log("  ai_deduction.input: %s", tostring(ai_deduction.input or 0))
+  logger.log("  ai_deduction.output: %s", tostring(ai_deduction.output or 0))
+  
+  -- Remaining amounts for input and output independently
+  local remaining_input = ai_deduction.input or 0
+  local remaining_output = ai_deduction.output or 0
+  
+  -- Process each entitlement for AI deduction (two passes like regular deduction)
+  for pass_number = 1, 2 do
+    local pass_name = "AI_PASS" .. pass_number
+    logger.log("=== %s START ===", pass_name)
+    
+    for _, ent_obj in ipairs(sorted_entitlements) do
+      if remaining_input == 0 and remaining_output == 0 then break end
+      
+      local ent_id = ent_obj.customer_entitlement_id
+      local ent_data = context.customer_entitlements[ent_id]
+      
+      if not ent_data or not ent_data.ai_balance then
+        logger.log("%s skipping %s - no ai_balance", pass_name, ent_id)
+      else
+        local usage_allowed = ent_obj.usage_allowed
+        if usage_allowed == cjson.null then usage_allowed = false end
+        usage_allowed = usage_allowed or overage_behavior_is_allow
+        
+        -- Pass 2: only process usage_allowed entitlements
+        local should_process = true
+        if pass_number == 2 and not usage_allowed then
+          should_process = false
+        end
+        
+        if should_process then
+          local ai_max = ent_obj.ai_max_balance
+          if is_nil(ai_max) then ai_max = nil end
+          
+          local result = deduct_ai_balance({
+            context = context,
+            ent_id = ent_id,
+            ai_deduction = { input = remaining_input, output = remaining_output },
+            ai_max_balance = ai_max,
+            pass_number = pass_number,
+            usage_allowed = usage_allowed,
+            overage_behavior_is_allow = overage_behavior_is_allow,
+            alter_granted_balance = alter_granted_balance,
+            log_prefix = pass_name,
+          })
+          
+          remaining_input = remaining_input - result.input_deducted
+          remaining_output = remaining_output - result.output_deducted
+          
+          local total_deducted = result.input_deducted + result.output_deducted
+          if total_deducted ~= 0 then
+            if not updates[ent_id] then
+              updates[ent_id] = { deducted = 0, additional_deducted = 0 }
+            end
+            updates[ent_id].deducted = (updates[ent_id].deducted or 0) + total_deducted
+          end
+          
+          logger.log("%s ent %s input_deducted=%s output_deducted=%s remaining_input=%s remaining_output=%s",
+            pass_name, ent_id, result.input_deducted, result.output_deducted, remaining_input, remaining_output)
+        end
+      end
+    end
+    
+    logger.log("=== %s END === remaining_input=%s remaining_output=%s", pass_name, remaining_input, remaining_output)
+  end
+  
+  local total_remaining = round_to_precision(remaining_input + remaining_output, 10)
+  
+  -- For AI features: return INSUFFICIENT_BALANCE whenever tokens remain after both passes
+  -- and overusage is not explicitly allowed (via usage_allowed or overage_behaviour='allow').
+  -- Unlike standard features (which cap at 0 and succeed), AI tracks should always fail
+  -- when the requested amount exceeds the available balance.
+  if total_remaining > 0 and not overage_behavior_is_allow then
+    return cjson.encode({
+      error = 'INSUFFICIENT_BALANCE',
+      feature_id = feature_id,
+      remaining = total_remaining,
+      remaining_input = remaining_input,
+      remaining_output = remaining_output,
+      updates = {},
+      logs = context.logs
+    })
+  end
+  
+  -- Apply all pending writes
+  apply_pending_writes(cache_key, context)
+  
+  -- Build return value with ai_balance
+  for ent_id, update in pairs(updates) do
+    local ent_data = context.customer_entitlements[ent_id]
+    if ent_data then
+      update.balance = ent_data.balance or 0
+      update.adjustment = ent_data.adjustment or 0
+      update.additional_balance = 0
+      update.entities = ent_data.entities or {}
+      if ent_data.ai_balance then
+        update.ai_balance = ent_data.ai_balance
+      end
+    end
+  end
+  
+  logger.log("=== AI DEDUCTION END ===")
+  
+  return cjson.encode({
+    updates = updates,
+    rollover_updates = {},
+    remaining = total_remaining,
+    error = cjson.null,
+    logs = context.logs
+  })
+end
+
+-- ============================================================================
+-- STANDARD (non-AI) DEDUCTION PATH
+-- ============================================================================
+
 -- Initialize remaining_amount (after context so we can use get_total_balance)
 local remaining_amount
 if not is_nil(target_balance) then
@@ -109,18 +244,9 @@ else
   remaining_amount = amount_to_deduct or 0
 end
 
--- ============================================================================
--- HELPER: Round number to eliminate floating point errors
--- ============================================================================
-local function round_to_precision(num, decimals)
-  local mult = 10 ^ (decimals or 10)
-  return math.floor(num * mult + 0.5) / mult
-end
-
 -- Determine if this is a refund (negative amount)
 local is_refund = remaining_amount < 0
 
-local logger = context.logger
 logger.log("=== LUA DEDUCTION START ===")
 logger.log("=== PARAMS ===")
 logger.log("  amount_to_deduct: %s", tostring(amount_to_deduct or "nil"))

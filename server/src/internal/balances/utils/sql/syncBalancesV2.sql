@@ -9,6 +9,7 @@
 --     - next_reset_at: bigint/number (unix timestamp, for conflict detection)
 --     - entity_count: number (for conflict detection)
 --     - cache_version: number (if defined, skip write if DB cache_version differs)
+--     - ai_balance: jsonb (AI token balance: { input: number, output: number } or null)
 --   rollover_updates: array of objects with:
 --     - rollover_id: string
 --     - balance: number
@@ -41,6 +42,7 @@ DECLARE
   ent_next_reset_at bigint;
   ent_entity_count int;
   ent_cache_version int;
+  ent_ai_balance jsonb;
   
   db_next_reset_at bigint;
   db_entity_count int;
@@ -102,6 +104,7 @@ BEGIN
       ent_next_reset_at := (ent_obj->>'next_reset_at')::bigint;
       ent_entity_count := COALESCE((ent_obj->>'entity_count')::int, 0);
       ent_cache_version := COALESCE((ent_obj->>'cache_version')::int, 0);
+      ent_ai_balance := ent_obj->'ai_balance';
       
       -- Get current DB values for conflict detection
       SELECT 
@@ -139,7 +142,8 @@ BEGIN
       SET
         balance = COALESCE(ent_balance, ce.balance),
         adjustment = COALESCE(ent_adjustment, ce.adjustment),
-        entities = COALESCE(ent_entities, ce.entities)
+        entities = COALESCE(ent_entities, ce.entities),
+        ai_balance = COALESCE(ent_ai_balance, ce.ai_balance)
       WHERE ce.id = ent_id;
       
       -- Track update
@@ -150,7 +154,8 @@ BEGIN
           jsonb_build_object(
             'balance', ent_balance,
             'adjustment', ent_adjustment,
-            'entities', ent_entities
+            'entities', ent_entities,
+            'ai_balance', ent_ai_balance
           )
         );
       END IF;

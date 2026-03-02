@@ -26,6 +26,7 @@ export const initializeDatabaseFunctions = async () => {
 			"getTotalBalance.sql",
 			"deductFromAdditionalBalance.sql",
 			"performDeduction.sql",
+			"performAiDeduction.sql",
 			"syncBalances.sql",
 			"syncBalancesV2.sql",
 			"resetCusEnts.sql",

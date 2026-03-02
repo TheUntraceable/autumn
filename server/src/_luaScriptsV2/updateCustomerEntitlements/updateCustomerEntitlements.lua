@@ -116,6 +116,11 @@ for _, update in ipairs(updates) do
         redis.call('JSON.SET', cache_key, base_path .. '.entities', cjson.encode(update.entities))
       end
 
+      -- Set ai_balance if provided (AI feature token balance)
+      if not is_nil(update.ai_balance) then
+        redis.call('JSON.SET', cache_key, base_path .. '.ai_balance', cjson.encode(update.ai_balance))
+      end
+
       -- Set next_reset_at if provided (reset operation)
       if not is_nil(update.next_reset_at) then
         redis.call('JSON.SET', cache_key, base_path .. '.next_reset_at', tostring(update.next_reset_at))

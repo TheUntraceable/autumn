@@ -64,6 +64,7 @@ local function init_context(params)
         adjustment = cus_ent.adjustment or 0,
         unlimited = cus_ent.unlimited,
         is_loose = is_loose,
+        ai_balance = nil,
       }
       
       if has_entity_scope then
@@ -72,6 +73,12 @@ local function init_context(params)
       else
         ent_data.balance = read_current_balance(params.cache_key, base_path)
         ent_data.entities = nil
+      end
+      
+      -- Read AI balance if present
+      local ai_bal = read_current_ai_balance(params.cache_key, base_path)
+      if ai_bal then
+        ent_data.ai_balance = ai_bal
       end
       
       context.customer_entitlements[ent_id] = ent_data
@@ -183,6 +190,30 @@ local function queue_rollover_update(params)
   
   -- Queue usage increment
   table.insert(context.pending_writes, { path = path .. '.usage', delta = deduct_amount })
+end
+
+--[[
+  queue_ai_balance_update(params)
+  
+  Queues AI balance updates (input and/or output) to pending_writes.
+  
+  params:
+    context: table (context object)
+    path: string (JSON path to the customer_entitlement, WITHOUT .ai_balance suffix)
+    input_delta: number (change to ai_balance.input, negative = deduction)
+    output_delta: number (change to ai_balance.output, negative = deduction)
+]]
+local function queue_ai_balance_update(params)
+  local context = params.context
+  local path = params.path
+  
+  if params.input_delta and params.input_delta ~= 0 then
+    table.insert(context.pending_writes, { path = path .. '.ai_balance.input', delta = params.input_delta })
+  end
+  
+  if params.output_delta and params.output_delta ~= 0 then
+    table.insert(context.pending_writes, { path = path .. '.ai_balance.output', delta = params.output_delta })
+  end
 end
 
 --[[
