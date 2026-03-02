@@ -40,6 +40,8 @@ export const apiFeatureToDbFeature = ({
 	) {
 		featureType = FeatureType.Metered;
 		usageType = apiFeature.type as unknown as FeatureUsageType;
+	} else if (apiFeature.type === ApiFeatureType.AI) {
+		featureType = FeatureType.AI;
 	}
 
 	const newConfig =

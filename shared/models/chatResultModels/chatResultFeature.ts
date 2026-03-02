@@ -8,7 +8,13 @@ export const ChatFeatureCreditSchema = z.object({
 export const ChatResultFeatureSchema = z.object({
 	id: z.string(),
 	name: z.string(),
-	type: z.enum(["boolean", "single_use", "continuous_use", "credit_system"]),
+	type: z.enum([
+		"boolean",
+		"single_use",
+		"continuous_use",
+		"credit_system",
+		"ai",
+	]),
 
 	display: z.object({
 		singular: z.string(),

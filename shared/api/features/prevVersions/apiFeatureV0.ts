@@ -7,6 +7,7 @@ export enum ApiFeatureType {
 	SingleUsage = "single_use",
 	ContinuousUse = "continuous_use",
 	CreditSystem = "credit_system",
+	AI = "ai",
 }
 
 export const FEATURE_EXAMPLE = {

@@ -42,6 +42,7 @@ const ApiFeatureType = z.enum([
 	"single_use",
 	"continuous_use",
 	"credit_system",
+	"ai",
 ]);
 
 const ProductItemInterval = z.enum([

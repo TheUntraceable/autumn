@@ -180,6 +180,10 @@ function mapFeatureTypeToAgentType(feature: Feature): AgentFeatureType {
 		return "boolean";
 	}
 
+	if (feature.type === FeatureType.AI) {
+		return "single_use";
+	}
+
 	if (feature.type === FeatureType.Metered) {
 		const usageType = feature.config?.usage_type;
 		if (
