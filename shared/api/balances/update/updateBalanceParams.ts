@@ -1,4 +1,5 @@
-import { AiTokenAllowanceSchema, ResetInterval } from "@autumn/shared";
+import { AiTokenAllowanceSchema } from "@models/productModels/entModels/entModels.js";
+import { ResetInterval } from "@models/productModels/intervals/resetInterval.js";
 import { z } from "zod/v4";
 import { BalanceParamsBaseSchema } from "../common/balanceParamsBase";
 
