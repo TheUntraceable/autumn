@@ -84,6 +84,10 @@ function CreateFeatureSheet({
 							}),
 						),
 						event_names: feature.event_names,
+						price_per_million_tokens_in:
+							feature.config?.price_per_million_tokens_in,
+						price_per_million_tokens_out:
+							feature.config?.price_per_million_tokens_out,
 					},
 				);
 

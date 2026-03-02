@@ -3,6 +3,7 @@ import {
 	cusEntsToGrantedBalance,
 	cusEntsToPrepaidQuantity,
 	type Entity,
+	FeatureType,
 	type FullCusProduct,
 	type FullCustomerEntitlement,
 	type FullCustomerPrice,
@@ -46,7 +47,11 @@ export function BalanceEditSheet() {
 	const [mode, setMode] = useState<"set" | "add">("set");
 	const [addValue, setAddValue] = useState<string>("");
 
-	const [grantedBalanceChanged, setGrantedBalanceChanged] = useState(false);
+	// AI-specific add mode fields
+	const [addAiInput, setAddAiInput] = useState<string>("");
+	const [addAiOutput, setAddAiOutput] = useState<string>("");
+
+	const [_grantedBalanceChanged, setGrantedBalanceChanged] = useState(false);
 
 	// Get the selected entitlement
 	const selectedCusEnt = originalEntitlements.find(
@@ -67,6 +72,8 @@ export function BalanceEditSheet() {
 			return {
 				balance: null as number | null,
 				next_reset_at: null as number | null,
+				ai_input_balance: null as number | null,
+				ai_output_balance: null as number | null,
 			};
 		}
 
@@ -88,6 +95,8 @@ export function BalanceEditSheet() {
 			grantedAndPurchasedBalance:
 				grantedAndPurchasedBalance !== null ? grantedAndPurchasedBalance : null,
 			next_reset_at: selectedCusEnt.next_reset_at,
+			ai_input_balance: selectedCusEnt.ai_balance?.input ?? null,
+			ai_output_balance: selectedCusEnt.ai_balance?.output ?? null,
 		};
 	}, [selectedCusEnt, entityId]);
 
@@ -113,18 +122,6 @@ export function BalanceEditSheet() {
 	const handleUpdateCusEntitlement = async (
 		cusEnt: FullCustomerEntitlement,
 	) => {
-		const balanceInt = parseFloat(String(updateFields.balance));
-		const grantedAndPurchasedBalanceFloat = parseFloat(
-			String(updateFields.grantedAndPurchasedBalance),
-		);
-		if (Number.isNaN(balanceInt)) {
-			toast.error("Please enter a valid balance");
-			return;
-		}
-
-		const grantedBalanceInput =
-			grantedAndPurchasedBalanceFloat - prepaidAllowance;
-
 		const cusProduct = getCusProduct(cusEnt);
 		const cusPrice = cusProduct?.customer_prices.find(
 			(cp: FullCustomerPrice) =>
@@ -139,15 +136,51 @@ export function BalanceEditSheet() {
 		setUpdateLoading(true);
 
 		try {
-			await axiosInstance.post("/v1/balances/update", {
-				customer_id: customer.id || customer.internal_id,
-				feature_id: featureId,
-				current_balance: balanceInt,
-				granted_balance: grantedBalanceInput ?? undefined,
-				customer_entitlement_id: cusEnt.id,
-				entity_id: entityId ?? undefined,
-				next_reset_at: updateFields.next_reset_at ?? undefined,
-			});
+			if (isAiFeature) {
+				// AI set mode: send ai_balance directly
+				const inputVal = parseFloat(String(updateFields.ai_input_balance ?? 0));
+				const outputVal = parseFloat(
+					String(updateFields.ai_output_balance ?? 0),
+				);
+				if (Number.isNaN(inputVal) || Number.isNaN(outputVal)) {
+					toast.error("Please enter valid token balances");
+					setUpdateLoading(false);
+					return;
+				}
+
+				await axiosInstance.post("/v1/balances/update", {
+					customer_id: customer.id || customer.internal_id,
+					feature_id: featureId,
+					ai_balance: { input: inputVal, output: outputVal },
+					customer_entitlement_id: cusEnt.id,
+					entity_id: entityId ?? undefined,
+					next_reset_at: updateFields.next_reset_at ?? undefined,
+				});
+			} else {
+				const balanceInt = parseFloat(String(updateFields.balance));
+				const grantedAndPurchasedBalanceFloat = parseFloat(
+					String(updateFields.grantedAndPurchasedBalance),
+				);
+				if (Number.isNaN(balanceInt)) {
+					toast.error("Please enter a valid balance");
+					setUpdateLoading(false);
+					return;
+				}
+
+				const grantedBalanceInput =
+					grantedAndPurchasedBalanceFloat - prepaidAllowance;
+
+				await axiosInstance.post("/v1/balances/update", {
+					customer_id: customer.id || customer.internal_id,
+					feature_id: featureId,
+					current_balance: balanceInt,
+					granted_balance: grantedBalanceInput ?? undefined,
+					customer_entitlement_id: cusEnt.id,
+					entity_id: entityId ?? undefined,
+					next_reset_at: updateFields.next_reset_at ?? undefined,
+				});
+			}
+
 			toast.success("Balance updated successfully");
 			await refetch();
 			handleClose();
@@ -158,17 +191,36 @@ export function BalanceEditSheet() {
 	};
 
 	const handleAddToBalance = async () => {
-		const valueToAdd = parseFloat(addValue);
-
 		setUpdateLoading(true);
 		try {
-			await axiosInstance.post("/v1/balances/update", {
-				customer_id: customer.id || customer.internal_id,
-				feature_id: featureId,
-				add_to_balance: valueToAdd,
-				customer_entitlement_id: selectedCusEnt?.id,
-				entity_id: entityId ?? undefined,
-			});
+			if (isAiFeature) {
+				const inputToAdd = parseFloat(addAiInput || "0");
+				const outputToAdd = parseFloat(addAiOutput || "0");
+				if (Number.isNaN(inputToAdd) || Number.isNaN(outputToAdd)) {
+					toast.error("Please enter valid token amounts");
+					setUpdateLoading(false);
+					return;
+				}
+
+				await axiosInstance.post("/v1/balances/update", {
+					customer_id: customer.id || customer.internal_id,
+					feature_id: featureId,
+					add_to_ai_balance: { input: inputToAdd, output: outputToAdd },
+					customer_entitlement_id: selectedCusEnt?.id,
+					entity_id: entityId ?? undefined,
+				});
+			} else {
+				const valueToAdd = parseFloat(addValue);
+
+				await axiosInstance.post("/v1/balances/update", {
+					customer_id: customer.id || customer.internal_id,
+					feature_id: featureId,
+					add_to_balance: valueToAdd,
+					customer_entitlement_id: selectedCusEnt?.id,
+					entity_id: entityId ?? undefined,
+				});
+			}
+
 			toast.success("Balance added successfully");
 			await refetch();
 			handleClose();
@@ -191,6 +243,7 @@ export function BalanceEditSheet() {
 
 	const firstEnt = originalEntitlements[0];
 	const feature = firstEnt.entitlement.feature;
+	const isAiFeature = feature.type === FeatureType.AI;
 
 	const isUnlimited = selectedCusEnt
 		? isUnlimitedCusEnt(selectedCusEnt)
@@ -285,7 +338,6 @@ export function BalanceEditSheet() {
 						)}
 					</div>
 				</SheetSection>
-
 				{!isUnlimited && (
 					<SheetSection withSeparator={false}>
 						<div className="flex flex-col gap-3">
@@ -300,74 +352,123 @@ export function BalanceEditSheet() {
 
 							{mode === "set" ? (
 								<div className="flex flex-col gap-3">
-									<div className="flex items-end gap-2 w-full">
+									{isAiFeature ? (
+										<div className="flex flex-col gap-3">
+											<LabelInput
+												label="Input Tokens"
+												placeholder="Enter input token balance"
+												className="w-full"
+												type="number"
+												value={
+													notNullish(fields.ai_input_balance)
+														? String(fields.ai_input_balance)
+														: ""
+												}
+												onChange={(e) => {
+													const val = e.target.value
+														? parseFloat(e.target.value)
+														: null;
+													setUpdateFields({
+														...updateFields,
+														ai_input_balance: val,
+													});
+												}}
+											/>
+											<LabelInput
+												label="Output Tokens"
+												placeholder="Enter output token balance"
+												className="w-full"
+												type="number"
+												value={
+													notNullish(fields.ai_output_balance)
+														? String(fields.ai_output_balance)
+														: ""
+												}
+												onChange={(e) => {
+													const val = e.target.value
+														? parseFloat(e.target.value)
+														: null;
+													setUpdateFields({
+														...updateFields,
+														ai_output_balance: val,
+													});
+												}}
+											/>
+										</div>
+									) : (
 										<div className="flex items-end gap-2 w-full">
-											<div className="flex w-full">
-												<LabelInput
-													label="Balance"
-													placeholder="Enter balance"
-													className="w-full"
-													type="number"
-													value={
-														notNullish(fields.balance)
-															? String(fields.balance)
-															: ""
-													}
-													onChange={(e) => {
-														const newBalance = e.target.value
-															? parseFloat(e.target.value)
-															: null;
-														setUpdateFields({
-															...updateFields,
-															balance: newBalance,
-														});
-													}}
-												/>
-											</div>
-											{showOutOfPopover && (
-												<GrantedBalancePopover
-													grantedBalance={
-														fields.grantedAndPurchasedBalance ?? null
-													}
-													onSave={(newGrantedAndPurchasedBalance) => {
-														setUpdateFields({
-															...updateFields,
-															grantedAndPurchasedBalance:
-																newGrantedAndPurchasedBalance,
-														});
-														setGrantedBalanceChanged(true);
-													}}
-												/>
-											)}
-											<div className="text-t4 text-sm truncate mb-1 flex justify-center max-w-full w-full">
-												<span className="truncate">
-													{numberWithCommas(
-														(fields.grantedAndPurchasedBalance ?? 0) -
-															(fields.balance ?? 0),
-													)}{" "}
-													used
-												</span>
+											<div className="flex items-end gap-2 w-full">
+												<div className="flex w-full">
+													<LabelInput
+														label="Balance"
+														placeholder="Enter balance"
+														className="w-full"
+														type="number"
+														value={
+															notNullish(fields.balance)
+																? String(fields.balance)
+																: ""
+														}
+														onChange={(e) => {
+															const newBalance = e.target.value
+																? parseFloat(e.target.value)
+																: null;
+															setUpdateFields({
+																...updateFields,
+																balance: newBalance,
+															});
+														}}
+													/>
+												</div>
+												{showOutOfPopover && (
+													<GrantedBalancePopover
+														grantedBalance={
+															fields.grantedAndPurchasedBalance ?? null
+														}
+														onSave={(newGrantedAndPurchasedBalance) => {
+															setUpdateFields({
+																...updateFields,
+																grantedAndPurchasedBalance:
+																	newGrantedAndPurchasedBalance,
+															});
+															setGrantedBalanceChanged(true);
+														}}
+													/>
+												)}
+												<div className="text-t4 text-sm truncate mb-1 flex justify-center max-w-full w-full">
+													<span className="truncate">
+														{numberWithCommas(
+															(fields.grantedAndPurchasedBalance ?? 0) -
+																(fields.balance ?? 0),
+														)}{" "}
+														used
+													</span>
+												</div>
 											</div>
 										</div>
-									</div>
-									<div className="flex flex-col shrink-0 w-full">
-										<div className="text-form-label block mb-1">Next Reset</div>
-										<DateInputUnix
-											disabled={
-												!!cusPrice ||
-												selectedCusEnt.entitlement.interval === "lifetime"
-											}
-											unixDate={fields.next_reset_at}
-											setUnixDate={(unixDate) => {
-												setUpdateFields({
-													...updateFields,
-													next_reset_at: unixDate,
-												});
-											}}
-											withTime
-											use24Hour
-										/>
-									</div>
+									)}
+									{!isAiFeature && (
+										<div className="flex flex-col shrink-0 w-full">
+											<div className="text-form-label block mb-1">
+												Next Reset
+											</div>
+											<DateInputUnix
+												disabled={
+													!!cusPrice ||
+													selectedCusEnt.entitlement.interval === "lifetime"
+												}
+												unixDate={fields.next_reset_at}
+												setUnixDate={(unixDate) => {
+													setUpdateFields({
+														...updateFields,
+														next_reset_at: unixDate,
+													});
+												}}
+												withTime
+												use24Hour
+											/>
+										</div>
+									)}
 
 									<BalanceEditPreviews
 										cusPrice={cusPrice}
@@ -378,16 +479,39 @@ export function BalanceEditSheet() {
 								</div>
 							) : (
 								<div className="flex flex-col gap-3">
-									<LabelInput
-										label="Amount to Add"
-										placeholder="Enter amount"
-										className="w-full"
-										type="number"
-										value={addValue}
-										onChange={(e) => setAddValue(e.target.value)}
-									/>
+									{isAiFeature ? (
+										<>
+											<LabelInput
+												label="Input Tokens to Add"
+												placeholder="Enter input token amount"
+												className="w-full"
+												type="number"
+												value={addAiInput}
+												onChange={(e) => setAddAiInput(e.target.value)}
+											/>
+											<LabelInput
+												label="Output Tokens to Add"
+												placeholder="Enter output token amount"
+												className="w-full"
+												type="number"
+												value={addAiOutput}
+												onChange={(e) => setAddAiOutput(e.target.value)}
+											/>
+										</>
+									) : (
+										<LabelInput
+											label="Amount to Add"
+											placeholder="Enter amount"
+											className="w-full"
+											type="number"
+											value={addValue}
+											onChange={(e) => setAddValue(e.target.value)}
+										/>
+									)}
 									<InfoBox variant="note">
-										Current and total granted balance will both be updated.
+										{isAiFeature
+											? "Input and output token balances will both be updated."
+											: "Current and total granted balance will both be updated."}
 									</InfoBox>
 								</div>
 							)}

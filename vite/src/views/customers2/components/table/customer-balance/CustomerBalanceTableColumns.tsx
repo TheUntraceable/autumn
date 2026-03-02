@@ -9,6 +9,7 @@ import {
 	cusEntsToPrepaidQuantity,
 	cusEntToPrepaidQuantity,
 	EntInterval,
+	FeatureType,
 	nullish,
 } from "@autumn/shared";
 import { CaretRightIcon } from "@phosphor-icons/react";
@@ -18,6 +19,7 @@ import { cn } from "@/lib/utils";
 import { formatUnixToDateTimeString } from "@/utils/formatUtils/formatDateUtils";
 import { getCusEntHoverTexts } from "@/views/admin/adminUtils";
 import { useFeatureUsageBalance } from "@/views/customers2/hooks/useFeatureUsageBalance";
+import { AIFeatureBalanceDisplay } from "../customer-feature-usage/AIFeatureBalanceDisplay";
 import { CustomerFeatureUsageBar } from "../customer-feature-usage/CustomerFeatureUsageBar";
 import { FeatureBalanceDisplay } from "../customer-feature-usage/FeatureBalanceDisplay";
 import type { CustomerBalanceRowData } from "./CustomerBalanceTable";
@@ -112,6 +114,9 @@ function ParentUsageCell({
 		usageType,
 		shouldShowOutOfBalance,
 		shouldShowUsed,
+		isAiFeature,
+		aiBalance,
+		aiAllowance,
 	} = useFeatureUsageBalance({
 		fullCustomer,
 		featureId: ent.entitlement.feature.id,
@@ -120,6 +125,15 @@ function ParentUsageCell({
 
 	if (ent.unlimited) {
 		return <span className="text-t4">Unlimited</span>;
+	}
+
+	if (isAiFeature) {
+		return (
+			<AIFeatureBalanceDisplay
+				aiBalance={aiBalance}
+				aiAllowance={aiAllowance}
+			/>
+		);
 	}
 
 	return (
@@ -143,6 +157,26 @@ function SubRowUsageCell({
 }) {
 	if (ent.unlimited) {
 		return <span className="text-t4">Unlimited</span>;
+	}
+
+	const isAi = ent.entitlement.feature.type === FeatureType.AI;
+
+	if (isAi) {
+		const aiBalance = ent.ai_balance ?? null;
+		const rawAiAllowance = ent.entitlement.ai_allowance ?? null;
+		const qty = ent.customer_product?.quantity ?? 1;
+		const aiAllowance = rawAiAllowance
+			? {
+					input: (rawAiAllowance.input ?? 0) * qty,
+					output: (rawAiAllowance.output ?? 0) * qty,
+				}
+			: null;
+		return (
+			<AIFeatureBalanceDisplay
+				aiBalance={aiBalance}
+				aiAllowance={aiAllowance}
+			/>
+		);
 	}
 
 	const { balance, allowance } = getIndividualEntValues({ ent, entityId });

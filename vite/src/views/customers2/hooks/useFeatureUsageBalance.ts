@@ -1,9 +1,12 @@
 import {
 	ACTIVE_STATUSES,
+	type AiTokenAllowance,
 	cusEntsToAllowance,
 	cusEntsToBalance,
+	cusEntsToCurrentAiBalance,
 	cusEntsToGrantedBalance,
 	cusEntsToPrepaidQuantity,
+	FeatureType,
 	type FullCustomer,
 	fullCustomerToCustomerEntitlements,
 	nullish,
@@ -25,6 +28,11 @@ export interface FeatureUsageBalanceResult {
 	usageType: string | undefined;
 	quantity: number;
 	cusEntsCount: number;
+	/** For AI features: remaining { input, output } balance */
+	aiBalance: AiTokenAllowance | null;
+	/** For AI features: total { input, output } allowance */
+	aiAllowance: AiTokenAllowance | null;
+	isAiFeature: boolean;
 }
 
 /**
@@ -42,6 +50,27 @@ export function useFeatureUsageBalance({
 				inStatuses: ACTIVE_STATUSES,
 			})
 		: [];
+
+	// Check if this is an AI feature
+	const featureType = cusEnts[0]?.entitlement?.feature?.type;
+	const isAi = featureType === FeatureType.AI;
+
+	// AI-specific balance and allowance
+	const aiBalance = isAi ? cusEntsToCurrentAiBalance({ cusEnts }) : null;
+	const aiAllowance: AiTokenAllowance | null = isAi
+		? cusEnts.reduce(
+				(acc, cusEnt) => {
+					const aiAlt = cusEnt.entitlement.ai_allowance;
+					if (!aiAlt) return acc;
+					const qty = cusEnt.customer_product?.quantity ?? 1;
+					return {
+						input: (acc?.input ?? 0) + (aiAlt.input ?? 0) * qty,
+						output: (acc?.output ?? 0) + (aiAlt.output ?? 0) * qty,
+					};
+				},
+				null as AiTokenAllowance | null,
+			)
+		: null;
 
 	//without manual update adjustment, no rollovers
 	const initialAllowance = cusEntsToAllowance({
@@ -90,5 +119,8 @@ export function useFeatureUsageBalance({
 		usageType,
 		quantity,
 		cusEntsCount: cusEnts.length,
+		aiBalance,
+		aiAllowance,
+		isAiFeature: isAi,
 	};
 }
