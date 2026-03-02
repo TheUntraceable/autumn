@@ -4,6 +4,7 @@ dotenv.config();
 
 import { AppEnv, FeatureUsageType } from "@autumn/shared";
 import {
+	constructAiFeature,
 	constructBooleanFeature,
 	constructCreditSystem,
 	constructMeteredFeature,
@@ -25,6 +26,8 @@ export enum TestFeature {
 
 	Action3 = "action3", // single use (pay per use)
 	Credits2 = "credits2", // credit system
+
+	AiModel = "ai-model", // AI feature (input/output tokens)
 }
 
 export const getFeatures = ({ orgId }: { orgId: string }) => ({
@@ -120,5 +123,10 @@ export const getFeatures = ({ orgId }: { orgId: string }) => ({
 				credit_cost: 1.4,
 			},
 		],
+	}),
+	[TestFeature.AiModel]: constructAiFeature({
+		featureId: TestFeature.AiModel,
+		orgId,
+		env: AppEnv.Sandbox,
 	}),
 });

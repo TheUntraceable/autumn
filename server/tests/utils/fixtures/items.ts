@@ -1,6 +1,7 @@
 import {
 	BillingInterval,
 	type LimitedItem,
+	type ProductItem,
 	type ProductItemConfig,
 	ProductItemInterval,
 	type RolloverConfig,
@@ -692,6 +693,39 @@ const oneOffPrice = ({ price = 50 }: { price?: number } = {}) =>
 	});
 
 // ═══════════════════════════════════════════════════════════════════
+// AI FEATURES
+// ═══════════════════════════════════════════════════════════════════
+
+/**
+ * Monthly AI model - tracks input and output tokens separately.
+ * @param inputIncluded - Included input tokens per month (default: 1_000_000)
+ * @param outputIncluded - Included output tokens per month (default: 1_000_000)
+ * @param allowOverusage - Whether to allow usage beyond the included balance (default: false)
+ */
+const monthlyAiModel = ({
+	inputIncluded = 1_000_000,
+	outputIncluded = 1_000_000,
+	allowOverusage = false,
+}: {
+	inputIncluded?: number;
+	outputIncluded?: number;
+	allowOverusage?: boolean;
+} = {}): ProductItem => {
+	const item: ProductItem = {
+		feature_id: TestFeature.AiModel,
+		included_usage: { input: inputIncluded, output: outputIncluded },
+		interval: ProductItemInterval.Month,
+		interval_count: 1,
+	};
+
+	if (allowOverusage) {
+		item.config = { allow_overusage: true } as ProductItemConfig;
+	}
+
+	return item;
+};
+
+// ═══════════════════════════════════════════════════════════════════
 // EXPORT
 // ═══════════════════════════════════════════════════════════════════
 
@@ -736,6 +770,9 @@ export const items = {
 	allocatedUsers,
 	allocatedWorkflows,
 	allocatedMessages,
+
+	// AI
+	monthlyAiModel,
 
 	// Base prices
 	monthlyPrice,

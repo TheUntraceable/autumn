@@ -114,6 +114,34 @@ export const constructMeteredFeature = ({
 	return newFeature;
 };
 
+export const constructAiFeature = ({
+	featureId,
+	name,
+	orgId,
+	env,
+}: {
+	featureId: string;
+	name?: string;
+	orgId: string;
+	env: AppEnv;
+}) => {
+	const newFeature: Feature = {
+		internal_id: generateId("fe"),
+		org_id: orgId,
+		env,
+		created_at: Date.now(),
+
+		id: featureId,
+		name: name || keyToTitle(featureId),
+		type: FeatureType.AI,
+		config: null,
+		archived: false,
+		event_names: [],
+	};
+
+	return newFeature;
+};
+
 export const constructCreditSystem = ({
 	featureId,
 	name,
