@@ -11,6 +11,7 @@ import {
 import { collatePgColumn } from "../../../db/utils.js";
 import { entities } from "../../cusModels/entityModels/entityTable.js";
 import { features } from "../../featureModels/featureTable.js";
+import type { AiTokenAllowance } from "../../productModels/entModels/entModels.js";
 import { entitlements } from "../../productModels/entModels/entTable.js";
 import { customerProducts } from "../cusProductTable.js";
 import type { EntityBalance } from "./cusEntModels.js";
@@ -39,6 +40,9 @@ export const customerEntitlements = pgTable(
 
 		// Need to work on free balance...
 		entities: jsonb("entities").$type<Record<string, EntityBalance>>(),
+
+		// AI features: separate input/output token balances
+		ai_balance: jsonb("ai_balance").$type<AiTokenAllowance>(),
 
 		// Expiry for loose entitlements (entitlements without reset intervals)
 		expires_at: numeric({ mode: "number" }),

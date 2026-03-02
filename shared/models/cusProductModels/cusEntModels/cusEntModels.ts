@@ -1,5 +1,8 @@
 import { z } from "zod/v4";
-import { EntitlementWithFeatureSchema } from "../../productModels/entModels/entModels.js";
+import {
+	AiTokenAllowanceSchema,
+	EntitlementWithFeatureSchema,
+} from "../../productModels/entModels/entModels.js";
 import { EntInterval } from "../../productModels/intervals/entitlementInterval.js";
 import { ReplaceableSchema } from "./replaceableSchema.js";
 import { RolloverSchema } from "./rolloverModels/rolloverTable.js";
@@ -46,6 +49,9 @@ export const CustomerEntitlementSchema = z.object({
 
 	// Group by fields
 	entities: z.record(z.string(), EntityBalanceSchema).nullish(),
+
+	// AI features: separate input/output token balances
+	ai_balance: AiTokenAllowanceSchema.nullish(),
 });
 
 export const FullCustomerEntitlementSchema = CustomerEntitlementSchema.extend({
