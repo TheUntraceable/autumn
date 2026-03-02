@@ -1,3 +1,4 @@
+import type { AiTokenAllowance } from "@models/productModels/entModels/entModels.js";
 import { AllowanceType } from "@models/productModels/entModels/entModels.js";
 import { Decimal } from "decimal.js";
 import type { FullCustomerEntitlement } from "../../models/cusProductModels/cusEntModels/cusEntModels.js";
@@ -133,4 +134,17 @@ export const getMaxOverage = ({
 		.toNumber();
 
 	return maxOverage;
+};
+
+/** Returns the AI token balance for a cusEnt, or null if it has no ai_balance. */
+export const getCusEntAiBalance = ({
+	cusEnt,
+}: {
+	cusEnt: FullCustomerEntitlement;
+}): AiTokenAllowance | null => {
+	if (!cusEnt.ai_balance) return null;
+	return {
+		input: cusEnt.ai_balance.input ?? 0,
+		output: cusEnt.ai_balance.output ?? 0,
+	};
 };

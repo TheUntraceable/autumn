@@ -1,9 +1,29 @@
 import type { FeatureOptions } from "@models/cusProductModels/cusProductModels.js";
-import type { Entitlement } from "@models/productModels/entModels/entModels.js";
+import type {
+	AiTokenAllowance,
+	Entitlement,
+} from "@models/productModels/entModels/entModels.js";
 import { BillingType } from "@models/productModels/priceModels/priceEnums.js";
 import type { Price } from "@models/productModels/priceModels/priceModels.js";
 import { getBillingType } from "@utils/productUtils/priceUtils.js";
 import { nullish } from "@utils/utils.js";
+
+/** Returns the AI token starting balance if the entitlement has ai_allowance set. */
+export const getAiStartingBalance = ({
+	entitlement,
+	productQuantity,
+}: {
+	entitlement: Entitlement;
+	productQuantity?: number;
+}): AiTokenAllowance | null => {
+	if (!entitlement.ai_allowance) return null;
+
+	const multiplier = productQuantity || 1;
+	return {
+		input: entitlement.ai_allowance.input * multiplier,
+		output: entitlement.ai_allowance.output * multiplier,
+	};
+};
 
 export const getStartingBalance = ({
 	entitlement,

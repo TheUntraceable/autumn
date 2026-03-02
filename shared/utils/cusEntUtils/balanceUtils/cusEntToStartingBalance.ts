@@ -1,7 +1,11 @@
 import { cusEntToCusPrice } from "@utils/cusEntUtils/convertCusEntUtils/cusEntToCusPrice";
 import type { FullCusEntWithFullCusProduct } from "../../../models/cusProductModels/cusEntModels/cusEntWithProduct";
+import type { AiTokenAllowance } from "../../../models/productModels/entModels/entModels";
 import { entToOptions } from "../../productUtils/convertProductUtils";
-import { getStartingBalance } from "../getStartingBalance";
+import {
+	getAiStartingBalance,
+	getStartingBalance,
+} from "../getStartingBalance";
 
 export const cusEntToStartingBalance = ({
 	cusEnt,
@@ -19,6 +23,18 @@ export const cusEntToStartingBalance = ({
 		entitlement: cusEnt.entitlement,
 		options,
 		relatedPrice: price,
+		productQuantity: cusEnt.customer_product?.quantity ?? 1,
+	});
+};
+
+/** Returns the AI starting balance for a customer entitlement, or null if not an AI feature. */
+export const cusEntToAiStartingBalance = ({
+	cusEnt,
+}: {
+	cusEnt: FullCusEntWithFullCusProduct;
+}): AiTokenAllowance | null => {
+	return getAiStartingBalance({
+		entitlement: cusEnt.entitlement,
 		productQuantity: cusEnt.customer_product?.quantity ?? 1,
 	});
 };
