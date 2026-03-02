@@ -1,6 +1,5 @@
-import type { EntityBalance, Rollover } from "@autumn/shared";
+import type { AiTokenAllowance, EntityBalance, Rollover } from "@autumn/shared";
 import { sql } from "drizzle-orm";
-import type { DrizzleCli } from "@/db/initDrizzle.js";
 import type { AutumnContext } from "@/honoUtils/HonoEnv.js";
 
 export type ResetCusEntParam = {
@@ -10,6 +9,7 @@ export type ResetCusEntParam = {
 	adjustment: number;
 	entities: Record<string, EntityBalance> | null;
 	next_reset_at: number;
+	ai_balance: AiTokenAllowance | null;
 	rollover_insert: Pick<
 		Rollover,
 		"id" | "cus_ent_id" | "balance" | "usage" | "expires_at" | "entities"
