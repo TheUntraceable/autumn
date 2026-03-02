@@ -1,4 +1,5 @@
 import {
+	BillingVersion,
 	cusEntToBillingObjects,
 	type FullCusEntWithFullCusProduct,
 	featureOptionUtils,
@@ -20,14 +21,22 @@ import { cusEntToInlineStripePrice } from "./cusEntToInlineStripePrice";
 export const prepaidToStripeItemSpec = ({
 	ctx,
 	cusEntWithCusProduct,
+	options,
 }: {
 	ctx: AutumnContext;
 	cusEntWithCusProduct: FullCusEntWithFullCusProduct;
+	options?: { isDuplicateProductId?: boolean; billingVersion?: BillingVersion };
 }): StripeItemSpec | null => {
 	const billing = cusEntToBillingObjects({ cusEnt: cusEntWithCusProduct });
 	if (!billing) return null;
 
-	const { cusProduct, price, product, entitlement, options } = billing;
+	const {
+		cusProduct,
+		price,
+		product,
+		entitlement,
+		options: featureOptions,
+	} = billing;
 
 	if (!isPrepaidPrice(price)) {
 		throw new InternalError({
@@ -39,7 +48,22 @@ export const prepaidToStripeItemSpec = ({
 	const isEntityScoped = notNullish(cusProduct.internal_entity_id);
 	const isTieredOneOff = priceUtils.isTieredOneOff({ price, product });
 
-	if (isEntityScoped || isTieredOneOff) {
+	if (options?.billingVersion === BillingVersion.V1) {
+		const optionsQuantity =
+			featureOptions?.upcoming_quantity ?? featureOptions?.quantity;
+		const finalQuantity = optionsQuantity;
+
+		return {
+			stripePriceId: config.stripe_price_id ?? undefined,
+			quantity: finalQuantity,
+			autumnPrice: price,
+			autumnEntitlement: entitlement,
+			autumnProduct: product,
+			autumnCusEnt: cusEntWithCusProduct,
+		};
+	}
+
+	if (isEntityScoped || isTieredOneOff || options?.isDuplicateProductId) {
 		const inlinePrice = cusEntToInlineStripePrice({
 			cusEnt: cusEntWithCusProduct,
 			org: ctx.org,
@@ -52,6 +76,9 @@ export const prepaidToStripeItemSpec = ({
 			autumnEntitlement: entitlement,
 			autumnProduct: product,
 			autumnCusEnt: cusEntWithCusProduct,
+			metadata: {
+				inline_price: "true",
+			},
 		};
 	}
 
@@ -62,7 +89,7 @@ export const prepaidToStripeItemSpec = ({
 	}
 
 	const quantity = featureOptionUtils.convert.toV2StripeQuantity({
-		featureOptions: options ?? undefined,
+		featureOptions: featureOptions ?? undefined,
 		price,
 		entitlement,
 	});
