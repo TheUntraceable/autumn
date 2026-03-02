@@ -9,6 +9,7 @@ import { StatusCodes } from "http-status-codes";
 import { createRoute } from "@/honoMiddlewares/routeHandler";
 import { runUpdateBalanceV2 } from "@/internal/balances/updateBalance/runUpdateBalanceV2";
 import { runUpdateUsage } from "@/internal/balances/updateBalance/runUpdateUsage";
+import { updateAiBalance } from "@/internal/balances/updateBalance/updateAiBalance";
 import { updateGrantedBalance } from "@/internal/balances/updateBalance/updateGrantedBalance";
 import { buildCustomerEntitlementFilters } from "@/internal/balances/utils/buildCustomerEntitlementFilters";
 import { CusService } from "@/internal/customers/CusService";
@@ -78,6 +79,10 @@ export const handleUpdateBalance = createRoute({
 				customerId: params.customer_id,
 				source: `handleUpdateBalance, updating next_reset_at`,
 			});
+		}
+
+		if (notNullish(params.ai_balance) || notNullish(params.add_to_ai_balance)) {
+			await updateAiBalance({ ctx, params });
 		}
 
 		return c.json({ success: true });
