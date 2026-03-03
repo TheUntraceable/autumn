@@ -9,11 +9,32 @@ export const CreditSchemaItemSchema = z.object({
 
 export const CreditSystemConfigSchema = z.object({
 	schema: z.array(
-		z.object({
-			metered_feature_id: z.string(),
-			// feature_amount: z.number(),
-			credit_amount: z.number(),
-		}),
+		z
+			.object({
+				metered_feature_id: z.string(),
+				// feature_amount: z.number(),
+				credit_amount: z.number().optional(),
+				cost_per_million_input: z.number().optional(),
+				cost_per_million_output: z.number().optional(),
+			})
+			.refine((data) => {
+				if (
+					!data.credit_amount &&
+					!data.cost_per_million_input &&
+					!data.cost_per_million_output
+				) {
+					return false;
+				}
+				// Make cost_per_* and credit_amount mutually exclusive
+				if (
+					data.credit_amount &&
+					(data.cost_per_million_input || data.cost_per_million_output)
+				) {
+					return false;
+				}
+
+				return true;
+			}),
 	),
 	usage_type: z.nativeEnum(FeatureUsageType),
 });
