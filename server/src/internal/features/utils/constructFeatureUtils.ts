@@ -127,7 +127,9 @@ export const constructCreditSystem = ({
 	env: AppEnv;
 	schema: {
 		metered_feature_id: string;
-		credit_cost: number;
+		credit_cost?: number;
+		cost_per_million_input?: number;
+		cost_per_million_output?: number;
 	}[];
 }) => {
 	const config = {
@@ -135,6 +137,8 @@ export const constructCreditSystem = ({
 			feature_amount: 1,
 			metered_feature_id: item.metered_feature_id,
 			credit_amount: item.credit_cost,
+			cost_per_million_input: item.cost_per_million_input,
+			cost_per_million_output: item.cost_per_million_output,
 		})),
 		usage_type: FeatureUsageType.Single,
 	};
