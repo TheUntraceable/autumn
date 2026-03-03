@@ -1,7 +1,9 @@
 import {
 	type CreditSchemaItem,
+	ErrCode,
 	type Feature,
 	FeatureType,
+	RecaseError,
 } from "@autumn/shared";
 import { Decimal } from "decimal.js";
 
@@ -58,6 +60,13 @@ export const featureToCreditSystem = ({
 	for (const schemaItem of schema) {
 		if (schemaItem.metered_feature_id === featureId) {
 			const creditAmount = schemaItem.credit_amount;
+			// DOUBLE CHECK WHAT THE BEHAVIOUR SHOULD BE IF THIS IS AN AI TOKEN PRICING MODEL RATHER THAN A CREDIT COST MODEL
+			if(creditAmount === undefined) {
+				throw new RecaseError({
+					message: "Credit amount is not defined for this feature in the credit system",
+					code: ErrCode.InvalidFeature,
+				})
+			}
 			const featureAmount = schemaItem.feature_amount ?? 1;
 
 			return new Decimal(creditAmount)
@@ -86,6 +95,14 @@ export const getCreditCost = ({
 
 	for (const schemaItem of schema) {
 		if (schemaItem.metered_feature_id === featureId) {
+			if(schemaItem.credit_amount === undefined) {
+				// DOUBLE CHECK WHAT THE BEHAVIOUR SHOULD BE IF THIS IS AN AI TOKEN PRICING MODEL RATHER THAN A CREDIT COST MODEL
+				throw new RecaseError({
+					message:
+						"Credit amount is not defined for this feature in the credit system",
+					code: ErrCode.InvalidFeature,
+				});
+			}
 			return new Decimal(schemaItem.credit_amount)
 				.div(schemaItem.feature_amount ?? 1)
 				.mul(amount)

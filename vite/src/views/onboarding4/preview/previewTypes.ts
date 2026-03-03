@@ -1,20 +1,20 @@
 import {
+	type BasePriceDisplayResult,
+	getBasePriceDisplay,
+} from "@/utils/product/basePriceDisplayUtils";
+import {
 	type AgentFeature,
+	agentFeatureToFeature,
+	agentItemToProductItem,
 	type AgentPricingConfig,
 	type AgentProduct,
 	type AgentProductItem,
-	agentFeatureToFeature,
-	agentItemToProductItem,
 	agentProductToProductV2,
 	type Feature,
 	getProductItemDisplay,
 	isOneOffProductV2,
 	productV2ToFrontendProduct,
 } from "@autumn/shared";
-import {
-	type BasePriceDisplayResult,
-	getBasePriceDisplay,
-} from "@/utils/product/basePriceDisplayUtils";
 
 /**
  * Preview-friendly product format derived from AgentPricingConfig
@@ -328,7 +328,7 @@ function areFeaturesEqual(
 		const s2 = cs2[index];
 		return (
 			s1.metered_feature_id === s2.metered_feature_id &&
-			(s1.credit_cost === s2.credit_cost) && (
+			s1.credit_cost === s2.credit_cost && (
 				s1.cost_per_million_input === s2.cost_per_million_input
 			) && (
 				s1.cost_per_million_output === s2.cost_per_million_output

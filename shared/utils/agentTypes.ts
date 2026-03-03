@@ -39,7 +39,9 @@ export interface AgentFeature {
 	} | null;
 	credit_schema?: Array<{
 		metered_feature_id: string;
-		credit_cost: number;
+		credit_cost?: number;
+		cost_per_million_input?: number;
+		cost_per_million_output?: number;
 	}> | null;
 }
 
