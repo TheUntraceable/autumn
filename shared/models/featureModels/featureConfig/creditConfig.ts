@@ -4,7 +4,9 @@ import { FeatureUsageType } from "../featureEnums";
 export const CreditSchemaItemSchema = z.object({
 	metered_feature_id: z.string(),
 	feature_amount: z.number().optional(),
-	credit_amount: z.number(),
+	credit_amount: z.number().optional(),
+	cost_per_million_input: z.number().optional(),
+	cost_per_million_output: z.number().optional(),
 });
 
 export const CreditSystemConfigSchema = z.object({

@@ -22,6 +22,8 @@ export const toApiFeature = ({ feature }: { feature: Feature }) => {
 		creditSchema = feature.config.schema.map((s: CreditSchemaItem) => ({
 			metered_feature_id: s.metered_feature_id,
 			credit_cost: s.credit_amount,
+			cost_per_million_input: s.cost_per_million_input,
+			cost_per_million_output: s.cost_per_million_output,
 		}));
 	}
 

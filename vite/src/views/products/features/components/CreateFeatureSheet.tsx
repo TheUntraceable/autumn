@@ -81,6 +81,8 @@ function CreateFeatureSheet({
 							(x: CreditSchemaItem) => ({
 								metered_feature_id: x.metered_feature_id,
 								credit_cost: x.credit_amount,
+								cost_per_million_input: x.cost_per_million_input,
+								cost_per_million_output: x.cost_per_million_output,
 							}),
 						),
 						event_names: feature.event_names,

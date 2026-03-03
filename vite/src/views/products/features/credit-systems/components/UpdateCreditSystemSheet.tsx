@@ -85,6 +85,8 @@ function UpdateCreditSystemSheet({
 						(x: CreditSchemaItem) => ({
 							metered_feature_id: x.metered_feature_id,
 							credit_cost: Number(x.credit_amount),
+							cost_per_million_input: Number(x.cost_per_million_input),
+							cost_per_million_output: Number(x.cost_per_million_output),
 						}),
 					),
 					event_names: creditSystem.event_names,
