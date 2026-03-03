@@ -31,8 +31,14 @@ export const ApiFeatureV1Schema = z.object({
 					description:
 						"ID of the metered feature that draws from this credit system.",
 				}),
-				credit_cost: z.number().meta({
+				credit_cost: z.number().optional().meta({
 					description: "Credits consumed per unit of the metered feature.",
+				}),
+				cost_per_million_input: z.number().optional().meta({
+					description: "Cost per million input tokens for AI models.",
+				}),
+				cost_per_million_output: z.number().optional().meta({
+					description: "Cost per million output tokens for AI models.",
 				}),
 			}),
 		)

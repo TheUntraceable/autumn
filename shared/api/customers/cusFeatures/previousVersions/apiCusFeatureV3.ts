@@ -118,7 +118,9 @@ export const CoreCusFeatureSchema = z.object({
 		.array(
 			z.object({
 				feature_id: z.string(),
-				credit_amount: z.number(),
+				credit_amount: z.number().optional(),
+				cost_per_million_input: z.number().optional(),
+				cost_per_million_output: z.number().optional(),
 			}),
 		)
 		.nullish()

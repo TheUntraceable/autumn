@@ -1,8 +1,10 @@
+import { RecaseError } from "@api/errors";
 import { ApiFeatureType } from "@api/features/prevVersions/apiFeatureV0";
 import type { EntInterval } from "@models/productModels/intervals/entitlementInterval";
 import { resetIntvToEntIntv } from "@utils/productV2Utils/productItemUtils/convertProductItem/planItemIntervals";
 import { Decimal } from "decimal.js";
 import type { z } from "zod/v4";
+import { ErrCode } from "../../../../enums/ErrCode";
 import { FeatureType } from "../../../../models/featureModels/featureEnums";
 import { sumValues } from "../../../../utils/utils";
 import type { ApiFeatureV1 } from "../../../features/apiFeatureV1";
@@ -256,10 +258,32 @@ export function transformBalanceToCusFeatureV3({
 		overage_allowed: overageAllowed,
 
 		credit_schema: input.feature?.credit_schema
-			? input.feature.credit_schema.map((credit) => ({
-					feature_id: credit.metered_feature_id,
-					credit_amount: credit.credit_cost,
-				}))
+			? input.feature.credit_schema.map((credit) => {
+					const base = {
+						feature_id: credit.metered_feature_id,
+					};
+					if (typeof credit.credit_cost === "number") {
+						return {
+							...base,
+							credit_amount: credit.credit_cost,
+						};
+					} else if (
+						typeof credit.cost_per_million_input === "number" ||
+						typeof credit.cost_per_million_output === "number"
+					) {
+						return {
+							...base,
+							cost_per_million_input: credit.cost_per_million_input,
+							cost_per_million_output: credit.cost_per_million_output,
+						};
+					}
+					throw new RecaseError({
+						message:
+							"Invalid credit schema item: must have either credit_cost or cost_per_million_input/output",
+						code: ErrCode.InvalidFeature,
+						statusCode: 500,
+					});
+				})
 			: undefined,
 
 		breakdown: newBreakdown,

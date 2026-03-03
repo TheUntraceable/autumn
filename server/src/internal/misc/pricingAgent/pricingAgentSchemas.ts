@@ -89,7 +89,9 @@ const FeatureSchema = z
 			.array(
 				z.object({
 					metered_feature_id: z.string(),
-					credit_cost: z.number(),
+					credit_cost: z.number().optional(),
+					cost_per_million_input: z.number().optional(),
+					cost_per_million_output: z.number().optional(),
 				}),
 			)
 			.nullish(),

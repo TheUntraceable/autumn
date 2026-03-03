@@ -53,9 +53,16 @@ export const apiFeatureToDbFeature = ({
 
 	if (apiFeature.credit_schema) {
 		newConfig.schema = apiFeature.credit_schema.map(
-			(credit: { metered_feature_id: string; credit_cost: number }) => ({
+			(credit: {
+				metered_feature_id: string;
+				credit_cost?: number;
+				cost_per_million_input?: number;
+				cost_per_million_output?: number;
+			}) => ({
 				metered_feature_id: credit.metered_feature_id,
 				credit_amount: credit.credit_cost,
+				cost_per_million_input: credit.cost_per_million_input,
+				cost_per_million_output: credit.cost_per_million_output,
 			}),
 		);
 	}
@@ -103,9 +110,16 @@ export const featureV1ToDbFeatureConfig = ({
 	if (type === FeatureType.CreditSystem) {
 		const newSchema = notNullish(apiFeature.credit_schema)
 			? apiFeature.credit_schema.map(
-					(credit: { metered_feature_id: string; credit_cost: number }) => ({
+					(credit: {
+						metered_feature_id: string;
+						credit_cost?: number;
+						cost_per_million_input?: number;
+						cost_per_million_output?: number;
+					}) => ({
 						metered_feature_id: credit.metered_feature_id,
 						credit_amount: credit.credit_cost,
+						cost_per_million_input: credit.cost_per_million_input,
+						cost_per_million_output: credit.cost_per_million_output,
 					}),
 				)
 			: originalFeature.config?.schema;
@@ -143,9 +157,16 @@ export const featureV1ToDbFeature = ({
 	if (apiFeature.credit_schema) {
 		newConfig.usage_type = FeatureUsageType.Single;
 		newConfig.schema = apiFeature.credit_schema.map(
-			(credit: { metered_feature_id: string; credit_cost: number }) => ({
+			(credit: {
+				metered_feature_id: string;
+				credit_cost?: number;
+				cost_per_million_input?: number;
+				cost_per_million_output?: number;
+			}) => ({
 				metered_feature_id: credit.metered_feature_id,
 				credit_amount: credit.credit_cost,
+				cost_per_million_input: credit.cost_per_million_input,
+				cost_per_million_output: credit.cost_per_million_output,
 			}),
 		);
 	}
