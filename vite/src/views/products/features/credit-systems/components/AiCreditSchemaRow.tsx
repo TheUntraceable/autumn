@@ -17,7 +17,7 @@ interface AiCreditSchemaRowProps {
 
 function formatCost(value: number | null | undefined): string {
 	if (value == null) return "–";
-	return parseFloat(value.toFixed(6)).toString();
+	return value.toFixed(2);
 }
 
 export function AiCreditSchemaRow({

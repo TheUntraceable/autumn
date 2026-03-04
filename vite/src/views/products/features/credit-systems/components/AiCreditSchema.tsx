@@ -161,9 +161,7 @@ export function AiCreditSchema({
 					onChange={(e) =>
 						handleDefaultMarkupChange(Number(e.target.value) || 0)
 					}
-					onBlur={(e) =>
-						handleDefaultMarkupChange(Number(e.target.value) || 0)
-					}
+					onBlur={(e) => handleDefaultMarkupChange(Number(e.target.value) || 0)}
 					placeholder="0"
 					className="w-24"
 				/>
@@ -171,14 +169,13 @@ export function AiCreditSchema({
 
 			<div className="hidden lg:grid lg:grid-cols-[minmax(0,2fr)_auto_auto_auto_auto_auto_auto] gap-2 mb-1">
 				<FormLabel className="truncate">Model</FormLabel>
-				<FormLabel className="w-24">Actual In $/M</FormLabel>
-				<FormLabel className="w-24">Actual Out $/M</FormLabel>
+				<FormLabel className="w-24">Actual In</FormLabel>
+				<FormLabel className="w-24">Actual Out</FormLabel>
 				<FormLabel className="w-20">Markup %</FormLabel>
-				<FormLabel className="w-24">User In $/M</FormLabel>
-				<FormLabel className="w-24">User Out $/M</FormLabel>
+				<FormLabel className="w-24">User In</FormLabel>
+				<FormLabel className="w-24">User Out</FormLabel>
 				<div className="w-8" />
 			</div>
-
 			<div className="flex flex-col gap-2">
 				{schema.map((item: CreditSchemaItem, index: number) => (
 					<AiCreditSchemaRow
@@ -193,6 +190,9 @@ export function AiCreditSchema({
 					/>
 				))}
 			</div>
+			<p className="hidden lg:block text-xs text-t-tertiary my-2">
+				All prices are in $/M tokens
+			</p>
 
 			<IconButton
 				variant="muted"
