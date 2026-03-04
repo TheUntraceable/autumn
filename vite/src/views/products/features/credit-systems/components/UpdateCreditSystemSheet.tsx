@@ -126,9 +126,21 @@ function UpdateCreditSystemSheet({
 		setOpen(false);
 	};
 
+	const isAiCreditSystem =
+		creditSystem.config?.schema?.[0]?.cost_per_million_input != null ||
+		creditSystem.config?.schema?.[0]?.cost_per_million_output != null;
+
 	return (
 		<Sheet open={open} onOpenChange={setOpen}>
-			<SheetContent className="flex flex-col overflow-hidden max-w-[calc(100vw-2rem)] sm:max-w-xl md:max-w-3xl lg:max-w-4xl">
+			<SheetContent
+				className="flex flex-col overflow-hidden"
+				style={{
+					maxWidth: isAiCreditSystem
+						? "min(calc(100vw - 2rem), 56rem)"
+						: "28rem",
+					transition: "max-width 300ms ease-in-out",
+				}}
+			>
 				<SheetHeader
 					title="Update Credit System"
 					description="Modify how this credit system is configured"
@@ -142,6 +154,7 @@ function UpdateCreditSystemSheet({
 					<CreditSystemSchema
 						creditSystem={creditSystem}
 						setCreditSystem={setCreditSystem}
+						disableModeSwitch
 					/>
 				</div>
 

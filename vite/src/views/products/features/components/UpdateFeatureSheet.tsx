@@ -1,4 +1,4 @@
-import { type Feature, FeatureUsageType } from "@autumn/shared";
+import { type Feature, FeatureType, FeatureUsageType } from "@autumn/shared";
 import type { AxiosError } from "axios";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -86,9 +86,22 @@ function UpdateFeatureSheet({
 		setOpen(false);
 	};
 
+	const isAiCreditSystem =
+		feature.type === FeatureType.CreditSystem &&
+		(feature.config?.schema?.[0]?.cost_per_million_input != null ||
+			feature.config?.schema?.[0]?.cost_per_million_output != null);
+
 	return (
 		<Sheet open={open} onOpenChange={setOpen}>
-			<SheetContent className="flex flex-col overflow-hidden">
+			<SheetContent
+				className="flex flex-col overflow-hidden"
+				style={{
+					maxWidth: isAiCreditSystem
+						? "min(calc(100vw - 2rem), 56rem)"
+						: "28rem",
+					transition: "max-width 300ms ease-in-out",
+				}}
+			>
 				<SheetHeader
 					title="Update Feature"
 					description="Modify how this feature is used in your app"
@@ -97,7 +110,10 @@ function UpdateFeatureSheet({
 				<div className="flex-1 overflow-y-auto">
 					<NewFeatureDetails feature={feature} setFeature={setFeature} />
 					<NewFeatureType feature={feature} setFeature={setFeature} />
-					<NewFeatureBehaviour feature={feature} setFeature={setFeature} />
+					<NewFeatureBehaviour
+						feature={feature}
+						setFeature={setFeature}
+					/>
 					<NewFeatureAdvanced feature={feature} setFeature={setFeature} />
 				</div>
 

@@ -41,8 +41,8 @@ export function AiCreditSchemaRow({
 	const userOutput = item.cost_per_million_output;
 
 	return (
-		<div className="grid grid-cols-1 lg:grid-cols-[2fr_auto_auto_auto_auto_auto_auto] gap-3 lg:gap-2 items-start lg:items-center p-3 lg:p-0 bg-muted/20 lg:bg-transparent rounded-md lg:rounded-none border lg:border-0 border-border/30">
-			<div>
+		<div className="grid grid-cols-1 lg:grid-cols-[minmax(0,2fr)_auto_auto_auto_auto_auto_auto] gap-3 lg:gap-2 items-start lg:items-center p-3 lg:p-0 bg-muted/20 lg:bg-transparent rounded-md lg:rounded-none border lg:border-0 border-border/30">
+			<div className="min-w-0 max-w-xs">
 				<div className="text-xs font-medium text-t-tertiary mb-1 lg:hidden">
 					Model
 				</div>

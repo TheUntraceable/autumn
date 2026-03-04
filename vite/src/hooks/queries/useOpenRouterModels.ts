@@ -7,6 +7,7 @@ export type OpenRouterModel = {
 		prompt: string;
 		completion: string;
 	};
+	created_at: number;
 };
 
 type OpenRouterResponse = {
