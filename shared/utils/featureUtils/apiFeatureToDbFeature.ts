@@ -58,11 +58,13 @@ export const apiFeatureToDbFeature = ({
 				credit_cost?: number;
 				cost_per_million_input?: number;
 				cost_per_million_output?: number;
+				markup?: number;
 			}) => ({
 				metered_feature_id: credit.metered_feature_id,
 				credit_amount: credit.credit_cost,
 				cost_per_million_input: credit.cost_per_million_input,
 				cost_per_million_output: credit.cost_per_million_output,
+				markup: credit.markup,
 			}),
 		);
 	}
@@ -115,11 +117,13 @@ export const featureV1ToDbFeatureConfig = ({
 						credit_cost?: number;
 						cost_per_million_input?: number;
 						cost_per_million_output?: number;
+						markup?: number;
 					}) => ({
 						metered_feature_id: credit.metered_feature_id,
 						credit_amount: credit.credit_cost,
 						cost_per_million_input: credit.cost_per_million_input,
 						cost_per_million_output: credit.cost_per_million_output,
+						markup: credit.markup,
 					}),
 				)
 			: originalFeature.config?.schema;
@@ -162,11 +166,13 @@ export const featureV1ToDbFeature = ({
 				credit_cost?: number;
 				cost_per_million_input?: number;
 				cost_per_million_output?: number;
+				markup?: number;
 			}) => ({
 				metered_feature_id: credit.metered_feature_id,
 				credit_amount: credit.credit_cost,
 				cost_per_million_input: credit.cost_per_million_input,
 				cost_per_million_output: credit.cost_per_million_output,
+				markup: credit.markup,
 			}),
 		);
 	}
