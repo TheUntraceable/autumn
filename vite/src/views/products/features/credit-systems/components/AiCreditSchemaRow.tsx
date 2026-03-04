@@ -1,8 +1,8 @@
-import type { CreditSchemaItem } from "@autumn/shared";
-import { X } from "lucide-react";
 import { IconButton } from "@/components/v2/buttons/IconButton";
 import { Input } from "@/components/v2/inputs/Input";
 import type { OpenRouterModel } from "@/hooks/queries/useOpenRouterModels";
+import type { CreditSchemaItem } from "@autumn/shared";
+import { X } from "lucide-react";
 import { AiModelSelectDropdown } from "./AiModelSelectDropdown";
 
 interface AiCreditSchemaRowProps {
@@ -43,7 +43,9 @@ export function AiCreditSchemaRow({
 	return (
 		<div className="grid grid-cols-1 lg:grid-cols-[2fr_auto_auto_auto_auto_auto_auto] gap-3 lg:gap-2 items-start lg:items-center p-3 lg:p-0 bg-muted/20 lg:bg-transparent rounded-md lg:rounded-none border lg:border-0 border-border/30">
 			<div>
-				<div className="text-xs font-medium text-t-tertiary mb-1 lg:hidden">Model</div>
+				<div className="text-xs font-medium text-t-tertiary mb-1 lg:hidden">
+					Model
+				</div>
 				<AiModelSelectDropdown
 					value={item.metered_feature_id}
 					onValueChange={(_modelId, selectedModel) =>
@@ -55,7 +57,9 @@ export function AiCreditSchemaRow({
 			</div>
 
 			<div>
-				<div className="text-xs font-medium text-t-tertiary mb-1 lg:hidden">Input</div>
+				<div className="text-xs font-medium text-t-tertiary mb-1 lg:hidden">
+					Input
+				</div>
 				<Input
 					readOnly
 					value={formatCost(actualInput)}
@@ -65,7 +69,9 @@ export function AiCreditSchemaRow({
 			</div>
 
 			<div>
-				<div className="text-xs font-medium text-t-tertiary mb-1 lg:hidden">Output</div>
+				<div className="text-xs font-medium text-t-tertiary mb-1 lg:hidden">
+					Output
+				</div>
 				<Input
 					readOnly
 					value={formatCost(actualOutput)}
@@ -75,7 +81,9 @@ export function AiCreditSchemaRow({
 			</div>
 
 			<div>
-				<div className="text-xs font-medium text-t-tertiary mb-1 lg:hidden">Markup</div>
+				<div className="text-xs font-medium text-t-tertiary mb-1 lg:hidden">
+					Markup
+				</div>
 				<Input
 					type="number"
 					lang="en"
@@ -88,7 +96,9 @@ export function AiCreditSchemaRow({
 			</div>
 
 			<div>
-				<div className="text-xs font-medium text-t-tertiary mb-1 lg:hidden">User Input</div>
+				<div className="text-xs font-medium text-t-tertiary mb-1 lg:hidden">
+					User Input
+				</div>
 				<Input
 					readOnly
 					value={formatCost(userInput)}
@@ -98,7 +108,9 @@ export function AiCreditSchemaRow({
 			</div>
 
 			<div>
-				<div className="text-xs font-medium text-t-tertiary mb-1 lg:hidden">User Output</div>
+				<div className="text-xs font-medium text-t-tertiary mb-1 lg:hidden">
+					User Output
+				</div>
 				<Input
 					readOnly
 					value={formatCost(userOutput)}
