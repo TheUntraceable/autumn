@@ -15,6 +15,17 @@ import {
 } from "./productV2Utils/productItemUtils/getItemType.js";
 import { notNullish, nullish } from "./utils.js";
 
+const isAiCreditSystemFeature = (feature: Feature): boolean => {
+	if (feature.type !== FeatureType.CreditSystem) return false;
+	const schema = feature.config?.schema;
+	if (!schema || schema.length === 0) return false;
+	const firstItem = schema[0];
+	return (
+		firstItem.cost_per_million_input != null ||
+		firstItem.cost_per_million_output != null
+	);
+};
+
 // ============================================================================
 // Types
 // ============================================================================
@@ -55,6 +66,10 @@ const getIncludedUsageText = (item: ProductItem, feature: Feature): string => {
 
 	if (nullish(item.included_usage) || item.included_usage === 0) {
 		return `0 ${featureName}`;
+	}
+
+	if (isAiCreditSystemFeature(feature)) {
+		return `$${numberWithCommas(item.included_usage)} of ${featureName}`;
 	}
 
 	return `${numberWithCommas(item.included_usage)} ${featureName}`;
@@ -120,7 +135,10 @@ export const getFeatureItemDisplay = ({
 		const intervalDisplay = getIntervalDisplay(item);
 		if (intervalDisplay) {
 			secondaryText = intervalDisplay;
-		} else if (isSingleUseFeature(feature) && item.included_usage !== Infinite) {
+		} else if (
+			isSingleUseFeature(feature) &&
+			item.included_usage !== Infinite
+		) {
 			secondaryText = "one-off";
 		}
 	}
@@ -178,6 +196,8 @@ export const getFeaturePriceItemDisplay = ({
 		throw new Error(`Feature ${item.feature_id} not found`);
 	}
 
+	const isAiCredits = isAiCreditSystemFeature(feature);
+
 	// Build included usage string (e.g., "100 credits")
 	const includedUsage = item.included_usage as number | null;
 	const hasIncludedUsage = notNullish(includedUsage) && includedUsage > 0;
@@ -187,8 +207,36 @@ export const getFeaturePriceItemDisplay = ({
 		units: item.included_usage,
 	});
 	const includedUsageStr = hasIncludedUsage
-		? `${numberWithCommas(includedUsage)} ${includedFeatureName}`
+		? isAiCredits
+			? `$${numberWithCommas(includedUsage)} of ${includedFeatureName}`
+			: `${numberWithCommas(includedUsage)} ${includedFeatureName}`
 		: "";
+
+	// Build interval string
+	const showInterval = isMainPrice || fullDisplay;
+	let intervalStr = "";
+	if (showInterval) {
+		const intervalDisplay = getIntervalDisplay(item);
+		if (intervalDisplay) {
+			intervalStr = intervalDisplay;
+		} else if (isSingleUseFeature(feature)) {
+			intervalStr = "one-off";
+		}
+	}
+
+	// AI credit systems use model-level pricing, not tier-based
+	if (isAiCredits) {
+		if (hasIncludedUsage) {
+			return {
+				primary_text: includedUsageStr,
+				secondary_text: `then billed at model costs ${intervalStr}`.trim(),
+			};
+		}
+		return {
+			primary_text: `${includedFeatureName}`,
+			secondary_text: `billed at model costs ${intervalStr}`.trim(),
+		};
+	}
 
 	// Build price string (e.g., "$0.01")
 	const priceStr =
@@ -207,18 +255,6 @@ export const getFeaturePriceItemDisplay = ({
 		billingUnits > 1
 			? `${numberWithCommas(billingUnits)} ${billingFeatureName}`
 			: billingFeatureName;
-
-	// Build interval string
-	const showInterval = isMainPrice || fullDisplay;
-	let intervalStr = "";
-	if (showInterval) {
-		const intervalDisplay = getIntervalDisplay(item);
-		if (intervalDisplay) {
-			intervalStr = intervalDisplay;
-		} else if (isSingleUseFeature(feature)) {
-			intervalStr = "one-off";
-		}
-	}
 
 	// Format output based on what we have
 	if (hasIncludedUsage) {

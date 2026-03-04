@@ -12,6 +12,7 @@ import { CoinsIcon } from "@phosphor-icons/react";
 import { PanelButton } from "@/components/v2/buttons/PanelButton";
 import { IncludedUsageIcon } from "@/components/v2/icons/AutumnIcons";
 import { useFeaturesQuery } from "@/hooks/queries/useFeaturesQuery";
+import { getFeature, isAiCreditSystem } from "@/utils/product/entitlementUtils";
 import { useProductItemContext } from "@/views/products/product/product-item/ProductItemContext";
 
 export function BillingType() {
@@ -70,7 +71,9 @@ export function BillingType() {
 		}
 	};
 
-	const feature = features.find((f) => f.id === item.feature_id);
+	const feature = getFeature(item.feature_id ?? "", features);
+	const isAiCredits = isAiCreditSystem({ feature });
+
 	const featureName =
 		getFeatureName({
 			feature,
@@ -89,6 +92,25 @@ export function BillingType() {
 	const isConsumable = usageType === FeatureUsageType.Single;
 	const isAllocated = usageType === FeatureUsageType.Continuous;
 
+	const getIncludedDescription = () => {
+		if (isAiCredits)
+			return "Set an included dollar amount of AI credits (eg, $50/month).";
+		if (isConsumable)
+			return `Set an included usage limit (eg, 100 ${featureName} per month).`;
+		if (isAllocated) return `Set a usage limit (eg, 5 ${featureName}).`;
+		return "Set a usage limit.";
+	};
+
+	const getPricedDescription = () => {
+		if (isAiCredits)
+			return "Charge for AI usage at model costs. Optionally include a credit amount.";
+		if (isConsumable)
+			return `Charge a price for usage (eg, $0.05 per ${singleFeatureName}).`;
+		if (isAllocated)
+			return `Charge a price based on usage (eg, $10 per ${singleFeatureName}).`;
+		return "Charge a price based on usage.";
+	};
+
 	return (
 		<div className="mt-3 space-y-4 billing-type-section">
 			<div className="flex w-full items-center gap-4">
@@ -102,11 +124,7 @@ export function BillingType() {
 				<div className="flex-1">
 					<div className="text-body-highlight mb-1">Included</div>
 					<div className="text-body-secondary leading-tight">
-						{isConsumable
-							? `Set an included usage limit (eg, 100 ${featureName} per month).`
-							: isAllocated
-								? `Set a usage limit (eg, 5 ${featureName}).`
-								: "Set a usage limit."}
+						{getIncludedDescription()}
 					</div>
 				</div>
 			</div>
@@ -122,11 +140,7 @@ export function BillingType() {
 				<div className="flex-1">
 					<div className="text-body-highlight mb-1">Priced</div>
 					<div className="text-body-secondary leading-tight">
-						{isConsumable
-							? `Charge a price for usage (eg, $0.05 per ${singleFeatureName}).`
-							: isAllocated
-								? `Charge a price based on usage (eg, $10 per ${singleFeatureName}).`
-								: "Charge a price based on usage."}
+						{getPricedDescription()}
 					</div>
 				</div>
 			</div>

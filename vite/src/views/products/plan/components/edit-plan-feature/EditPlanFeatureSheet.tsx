@@ -20,7 +20,7 @@ import {
 } from "@/components/v2/selects/Select";
 import { SheetHeader, SheetSection } from "@/components/v2/sheets/InlineSheet";
 import { useFeaturesQuery } from "@/hooks/queries/useFeaturesQuery";
-import { getFeature } from "@/utils/product/entitlementUtils";
+import { getFeature, isAiCreditSystem } from "@/utils/product/entitlementUtils";
 import { isFeaturePriceItem } from "@/utils/product/getItemType";
 import UpdateFeatureSheet from "@/views/products/features/components/UpdateFeatureSheet";
 import UpdateCreditSystemSheet from "@/views/products/features/credit-systems/components/UpdateCreditSystemSheet";
@@ -76,6 +76,7 @@ export function EditPlanFeatureSheet({
 
 	const feature = getFeature(item?.feature_id ?? "", features);
 	const isFeaturePrice = isFeaturePriceItem(item);
+	const isAiCredits = isAiCreditSystem({ feature });
 
 	return (
 		<div className="flex flex-col h-full overflow-hidden">
@@ -117,7 +118,7 @@ export function EditPlanFeatureSheet({
 							<IncludedUsage />
 						</SheetSection>
 
-						{isFeaturePrice && (
+						{isFeaturePrice && !isAiCredits && (
 							<SheetSection
 								title={
 									item.tiers && item.tiers.length > 1 ? (
@@ -179,6 +180,12 @@ export function EditPlanFeatureSheet({
 									<UsageReset showBillingLabel={true} />
 								</div>
 								<PricedFeatureSettings />
+							</SheetSection>
+						)}
+
+						{isFeaturePrice && isAiCredits && (
+							<SheetSection title="Billing">
+								<UsageReset showBillingLabel={true} />
 							</SheetSection>
 						)}
 

@@ -11,6 +11,7 @@ import { InfinityIcon } from "@phosphor-icons/react";
 import { IconCheckbox } from "@/components/v2/checkboxes/IconCheckbox";
 import { Input } from "@/components/v2/inputs/Input";
 import { useFeaturesQuery } from "@/hooks/queries/useFeaturesQuery";
+import { getFeature, isAiCreditSystem } from "@/utils/product/entitlementUtils";
 import { isFeaturePriceItem } from "@/utils/product/getItemType";
 import { useProductItemContext } from "@/views/products/product/product-item/ProductItemContext";
 import { UsageReset } from "./UsageReset";
@@ -22,8 +23,9 @@ export function IncludedUsage() {
 	if (!item) return null;
 
 	const includedUsage = item.included_usage;
-
 	const isFeaturePrice = isFeaturePriceItem(item);
+	const feature = getFeature(item.feature_id ?? "", features);
+	const isAiCredits = isAiCreditSystem({ feature });
 
 	// Helper function to get the display value for the input
 	const getInputValue = () => {
@@ -36,24 +38,41 @@ export function IncludedUsage() {
 		return includedUsage.toString();
 	};
 
+	const featureName = getFeatureName({
+		feature: features.find((f) => f.id === item.feature_id),
+		plural: true,
+	});
+
 	return (
 		<div className="space-y-4">
 			<div className="w-full h-auto flex items-end gap-2">
 				<div className="flex-1">
 					<div className="text-t3 text-sm block mb-2">
-						Quantity of&nbsp;
-						<span className="font-medium text-t1">
-							{getFeatureName({
-								feature: features.find((f) => f.id === item.feature_id),
-								plural: true,
-							})}{" "}
-						</span>
-						{!isFeaturePrice ? " that can be used" : " granted before billing"}
+						{isAiCredits ? (
+							<>
+								Dollar amount of{" "}
+								<span className="font-medium text-t1">{featureName}</span>
+								{!isFeaturePrice
+									? " that can be used"
+									: " included before billing"}
+							</>
+						) : (
+							<>
+								Quantity of&nbsp;
+								<span className="font-medium text-t1">{featureName} </span>
+								{!isFeaturePrice
+									? " that can be used"
+									: " granted before billing"}
+							</>
+						)}
 					</div>
 					<div className="flex items-center gap-2">
+						{isAiCredits && (
+							<span className="text-t2 text-sm font-medium">$</span>
+						)}
 						<Input
 							key={`included-usage-${item.feature_id || item.price_id || "default"}`}
-							placeholder="eg, 100"
+							placeholder={isAiCredits ? "eg, 50.00" : "eg, 100"}
 							value={getInputValue()}
 							onChange={(e) => {
 								const value = e.target.value.trim();

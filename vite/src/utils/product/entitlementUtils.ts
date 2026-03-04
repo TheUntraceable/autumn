@@ -44,6 +44,17 @@ export const getFeatureCreditSystem = ({
 	return feature?.type === FeatureType.CreditSystem;
 };
 
+export const isAiCreditSystem = ({ feature }: { feature: Feature | null }) => {
+	if (!feature || feature.type !== FeatureType.CreditSystem) return false;
+	const schema = feature.config?.schema;
+	if (!schema || schema.length === 0) return false;
+	const firstItem = schema[0];
+	return (
+		firstItem.cost_per_million_input != null ||
+		firstItem.cost_per_million_output != null
+	);
+};
+
 export const checkItemIsValid = (item: ProductItem, showToast = true) => {
 	if (item && isBooleanFeatureItem(item)) return true;
 
