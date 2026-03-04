@@ -128,7 +128,7 @@ function UpdateCreditSystemSheet({
 
 	return (
 		<Sheet open={open} onOpenChange={setOpen}>
-			<SheetContent className="flex flex-col overflow-hidden">
+			<SheetContent className="flex flex-col overflow-hidden md:max-w-3xl">
 				<SheetHeader
 					title="Update Credit System"
 					description="Modify how this credit system is configured"

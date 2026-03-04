@@ -133,15 +133,19 @@ export function CreditSystemSchema({
 
 	// AI mode handlers
 	const handleAiModelChange = (index: number, model: OpenRouterModel) => {
-		const promptPricePerToken = Number.parseFloat(model.pricing.prompt) || 0;
-		const completionPricePerToken =
-			Number.parseFloat(model.pricing.completion) || 0;
+		const currentMarkup = schema[index]?.markup ?? 0;
+		const multiplier = 1 + currentMarkup / 100;
+		const actualInput =
+			(Number.parseFloat(model.pricing.prompt) || 0) * 1_000_000;
+		const actualOutput =
+			(Number.parseFloat(model.pricing.completion) || 0) * 1_000_000;
 		const newSchema = [...schema];
 		newSchema[index] = {
 			...newSchema[index],
 			metered_feature_id: model.id,
-			cost_per_million_input: promptPricePerToken * 1_000_000,
-			cost_per_million_output: completionPricePerToken * 1_000_000,
+			markup: currentMarkup,
+			cost_per_million_input: actualInput * multiplier,
+			cost_per_million_output: actualOutput * multiplier,
 		};
 		setCreditSystem({
 			...creditSystem,
@@ -149,13 +153,22 @@ export function CreditSystemSchema({
 		});
 	};
 
-	const handleAiCostChange = (
-		index: number,
-		key: "cost_per_million_input" | "cost_per_million_output",
-		value: string | number,
-	) => {
+	const handleMarkupChange = (index: number, value: number) => {
+		const item = schema[index];
+		const model = models.find((m) => m.id === item.metered_feature_id);
+		if (!model) return;
+		const multiplier = 1 + value / 100;
+		const actualInput =
+			(Number.parseFloat(model.pricing.prompt) || 0) * 1_000_000;
+		const actualOutput =
+			(Number.parseFloat(model.pricing.completion) || 0) * 1_000_000;
 		const newSchema = [...schema];
-		newSchema[index] = { ...newSchema[index], [key]: value };
+		newSchema[index] = {
+			...item,
+			markup: value,
+			cost_per_million_input: actualInput * multiplier,
+			cost_per_million_output: actualOutput * multiplier,
+		};
 		setCreditSystem({
 			...creditSystem,
 			config: { ...creditSystem.config, schema: newSchema },
@@ -286,10 +299,13 @@ export function CreditSystemSchema({
 					</div>
 				) : (
 					<div className="flex flex-col gap-0">
-						<div className="grid grid-cols-[1fr_auto_auto_auto] gap-2 mb-1">
+						<div className="grid grid-cols-[2fr_auto_auto_auto_auto_auto_auto] gap-2 mb-1">
 							<FormLabel>Model</FormLabel>
-							<FormLabel className="w-28">Input $/M tokens</FormLabel>
-							<FormLabel className="w-28">Output $/M tokens</FormLabel>
+							<FormLabel className="w-24">Actual In $/M</FormLabel>
+							<FormLabel className="w-24">Actual Out $/M</FormLabel>
+							<FormLabel className="w-20">Markup %</FormLabel>
+							<FormLabel className="w-24">User In $/M</FormLabel>
+							<FormLabel className="w-24">User Out $/M</FormLabel>
 							<div className="w-8" />
 						</div>
 
@@ -302,7 +318,7 @@ export function CreditSystemSchema({
 									models={models}
 									isLoading={modelsLoading}
 									onModelChange={handleAiModelChange}
-									onCostChange={handleAiCostChange}
+									onMarkupChange={handleMarkupChange}
 									onRemove={removeSchemaItem}
 								/>
 							))}
