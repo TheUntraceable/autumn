@@ -24,6 +24,14 @@ export const TrackParamsSchema = BalanceParamsBaseSchema.extend({
 		description:
 			"The amount of usage to record. Defaults to 1. Use negative values to credit balance (e.g., when removing a seat).",
 	}),
+	input_tokens: z.number().optional().meta({
+		description:
+			"Number of input tokens consumed. Used with AI credit systems that define cost_per_million_input.",
+	}),
+	output_tokens: z.number().optional().meta({
+		description:
+			"Number of output tokens consumed. Used with AI credit systems that define cost_per_million_output.",
+	}),
 	properties: z.record(z.string(), z.any()).optional().meta({
 		description: "Additional properties to attach to this usage event.",
 	}),

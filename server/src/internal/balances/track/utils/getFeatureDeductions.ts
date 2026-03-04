@@ -1,4 +1,8 @@
-import { FeatureNotFoundError, RecaseError } from "@autumn/shared";
+import {
+	FeatureNotFoundError,
+	normaliseAiModelName,
+	RecaseError,
+} from "@autumn/shared";
 import type { AutumnContext } from "../../../../honoUtils/HonoEnv.js";
 import type { FeatureDeduction } from "../../utils/types/featureDeduction.js";
 
@@ -8,18 +12,24 @@ export const getTrackFeatureDeductions = ({
 	ctx,
 	featureId,
 	value,
+	inputTokens,
+	outputTokens,
 }: {
 	ctx: AutumnContext;
 	featureId: string;
 	value?: number;
+	inputTokens?: number;
+	outputTokens?: number;
 }) => {
 	const featureDeductions: FeatureDeduction[] = [];
 
 	const mainFeatureDeduction = value ?? DEFAULT_VALUE;
 
-	// 1. If feature ID
 	const features = ctx.features;
-	const mainFeature = features.find((f) => f.id === featureId);
+	const normalisedId = normaliseAiModelName(featureId);
+	const mainFeature = features.find(
+		(f) => f.id === featureId || normaliseAiModelName(f.id) === normalisedId,
+	);
 	if (!mainFeature) {
 		throw new FeatureNotFoundError({
 			featureId,
@@ -29,6 +39,8 @@ export const getTrackFeatureDeductions = ({
 	featureDeductions.push({
 		feature: mainFeature,
 		deduction: mainFeatureDeduction,
+		inputTokens,
+		outputTokens,
 	});
 
 	return featureDeductions;
@@ -38,10 +50,14 @@ export const getTrackEventNameDeductions = ({
 	ctx,
 	eventName,
 	value,
+	inputTokens,
+	outputTokens,
 }: {
 	ctx: AutumnContext;
 	eventName: string;
 	value?: number;
+	inputTokens?: number;
+	outputTokens?: number;
 }) => {
 	const features = ctx.features;
 
@@ -54,6 +70,8 @@ export const getTrackEventNameDeductions = ({
 			ctx,
 			featureId: f.id,
 			value,
+			inputTokens,
+			outputTokens,
 		}),
 	);
 

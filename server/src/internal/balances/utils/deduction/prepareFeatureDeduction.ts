@@ -35,7 +35,7 @@ export const prepareFeatureDeduction = ({
 	options?: DeductionOptions;
 }): PreparedFeatureDeduction => {
 	const { org } = ctx;
-	const { feature, targetBalance } = deduction;
+	const { feature, targetBalance, inputTokens, outputTokens } = deduction;
 
 	const { overageBehaviour = "cap", customerEntitlementFilters } = options;
 
@@ -77,6 +77,8 @@ export const prepareFeatureDeduction = ({
 			const creditCost = getCreditCost({
 				featureId: feature.id,
 				creditSystem: ce.entitlement.feature,
+				inputTokens,
+				outputTokens,
 			});
 
 			const maxOverage = getMaxOverage({ cusEnt: ce });
@@ -105,6 +107,8 @@ export const prepareFeatureDeduction = ({
 			const creditCost = getCreditCost({
 				featureId: feature.id,
 				creditSystem: ce.entitlement.feature,
+				inputTokens,
+				outputTokens,
 			});
 			return (ce.rollovers || []).map((r) => ({
 				...r,

@@ -3,6 +3,7 @@ import {
 	ErrCode,
 	type Feature,
 	FeatureType,
+	normaliseAiModelName,
 	RecaseError,
 } from "@autumn/shared";
 import { Decimal } from "decimal.js";
@@ -18,9 +19,10 @@ const creditSystemContainsFeature = ({
 		return false;
 	}
 	const schema: CreditSchemaItem[] = creditSystem.config.schema;
+	const normalised = normaliseAiModelName(meteredFeatureId);
 
 	for (const schemaItem of schema) {
-		if (schemaItem.metered_feature_id === meteredFeatureId) {
+		if (normaliseAiModelName(schemaItem.metered_feature_id) === normalised) {
 			return true;
 		}
 	}
@@ -50,22 +52,39 @@ export const featureToCreditSystem = ({
 	featureId,
 	creditSystem,
 	amount,
+	inputTokens,
+	outputTokens,
 }: {
 	featureId: string;
 	creditSystem: Feature;
 	amount: number;
+	inputTokens?: number;
+	outputTokens?: number;
 }) => {
 	const schema: CreditSchemaItem[] = creditSystem.config.schema;
+	const normalised = normaliseAiModelName(featureId);
 
 	for (const schemaItem of schema) {
-		if (schemaItem.metered_feature_id === featureId) {
+		if (normaliseAiModelName(schemaItem.metered_feature_id) === normalised) {
+			// AI token pricing model
+			if (
+				schemaItem.cost_per_million_input ||
+				schemaItem.cost_per_million_output
+			) {
+				return calculateTokenCreditCost({
+					schemaItem,
+					inputTokens,
+					outputTokens,
+				});
+			}
+
 			const creditAmount = schemaItem.credit_amount;
-			// DOUBLE CHECK WHAT THE BEHAVIOUR SHOULD BE IF THIS IS AN AI TOKEN PRICING MODEL RATHER THAN A CREDIT COST MODEL
-			if(creditAmount === undefined) {
+			if (creditAmount === undefined) {
 				throw new RecaseError({
-					message: "Credit amount is not defined for this feature in the credit system",
+					message:
+						"Credit amount is not defined for this feature in the credit system",
 					code: ErrCode.InvalidFeature,
-				})
+				});
 			}
 			const featureAmount = schemaItem.feature_amount ?? 1;
 
@@ -79,24 +98,74 @@ export const featureToCreditSystem = ({
 	return amount;
 };
 
+/**
+ * Calculates credit cost from input/output tokens for AI token pricing models.
+ */
+const calculateTokenCreditCost = ({
+	schemaItem,
+	inputTokens,
+	outputTokens,
+}: {
+	schemaItem: CreditSchemaItem;
+	inputTokens?: number;
+	outputTokens?: number;
+}) => {
+	if (!inputTokens && !outputTokens) {
+		throw new RecaseError({
+			message:
+				"input_tokens or output_tokens must be provided for AI token pricing",
+			code: ErrCode.InvalidRequest,
+			statusCode: 400,
+		});
+	}
+
+	const inputCost = new Decimal(inputTokens ?? 0)
+		.mul(schemaItem.cost_per_million_input ?? 0)
+		.div(1_000_000);
+
+	const outputCost = new Decimal(outputTokens ?? 0)
+		.mul(schemaItem.cost_per_million_output ?? 0)
+		.div(1_000_000);
+
+	const totalCost = inputCost.plus(outputCost);
+
+	return totalCost.toNumber();
+};
+
 export const getCreditCost = ({
 	featureId,
 	creditSystem,
 	amount = 1,
+	inputTokens,
+	outputTokens,
 }: {
 	featureId: string;
 	creditSystem: Feature;
 	amount?: number;
+	inputTokens?: number;
+	outputTokens?: number;
 }) => {
 	if (creditSystem.type !== FeatureType.CreditSystem) {
 		return amount;
 	}
 	const schema: CreditSchemaItem[] = creditSystem.config.schema;
+	const normalised = normaliseAiModelName(featureId);
 
 	for (const schemaItem of schema) {
-		if (schemaItem.metered_feature_id === featureId) {
-			if(schemaItem.credit_amount === undefined) {
-				// DOUBLE CHECK WHAT THE BEHAVIOUR SHOULD BE IF THIS IS AN AI TOKEN PRICING MODEL RATHER THAN A CREDIT COST MODEL
+		if (normaliseAiModelName(schemaItem.metered_feature_id) === normalised) {
+			// AI token pricing model
+			if (
+				schemaItem.cost_per_million_input ||
+				schemaItem.cost_per_million_output
+			) {
+				return calculateTokenCreditCost({
+					schemaItem,
+					inputTokens,
+					outputTokens,
+				});
+			}
+
+			if (schemaItem.credit_amount === undefined) {
 				throw new RecaseError({
 					message:
 						"Credit amount is not defined for this feature in the credit system",

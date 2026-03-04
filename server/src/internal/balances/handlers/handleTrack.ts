@@ -28,11 +28,15 @@ export const handleTrack = createRoute({
 					ctx,
 					featureId: body.feature_id,
 					value: body.value,
+					inputTokens: body.input_tokens,
+					outputTokens: body.output_tokens,
 				})
 			: getTrackEventNameDeductions({
 					ctx,
 					eventName: body.event_name!,
 					value: body.value,
+					inputTokens: body.input_tokens,
+					outputTokens: body.output_tokens,
 				});
 
 		return c.json(

@@ -18,11 +18,20 @@ export const buildEventInfo = (params: TrackParams) => {
 		properties,
 		timestamp,
 		idempotency_key,
+		input_tokens,
+		output_tokens,
 	} = params;
+
+	const eventProperties = {
+		...properties,
+		...(input_tokens !== undefined && { input_tokens }),
+		...(output_tokens !== undefined && { output_tokens }),
+	};
+
 	return {
 		event_name: feature_id || event_name || "",
 		value: value ?? 1,
-		properties: properties,
+		properties: eventProperties,
 		timestamp: timestamp,
 		idempotency_key: idempotency_key,
 	};
