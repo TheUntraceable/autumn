@@ -84,9 +84,16 @@ function UpdateCreditSystemSheet({
 					credit_schema: creditSystem.config?.schema?.map(
 						(x: CreditSchemaItem) => ({
 							metered_feature_id: x.metered_feature_id,
-							credit_cost: Number(x.credit_amount),
-							cost_per_million_input: Number(x.cost_per_million_input),
-							cost_per_million_output: Number(x.cost_per_million_output),
+							credit_cost:
+								x.credit_amount != null ? Number(x.credit_amount) : undefined,
+							cost_per_million_input:
+								x.cost_per_million_input != null
+									? Number(x.cost_per_million_input)
+									: undefined,
+							cost_per_million_output:
+								x.cost_per_million_output != null
+									? Number(x.cost_per_million_output)
+									: undefined,
 						}),
 					),
 					event_names: creditSystem.event_names,
@@ -97,7 +104,6 @@ function UpdateCreditSystemSheet({
 			await refetch();
 			toast.success("Credit system updated successfully");
 
-			// Call onSuccess with old and new IDs
 			if (onSuccess) {
 				onSuccess(
 					selectedCreditSystem.id,

@@ -2,7 +2,7 @@ import type { CreateFeature, CreditSchemaItem, Feature } from "@autumn/shared";
 import { FeatureType } from "@autumn/shared";
 import { PlusIcon } from "@phosphor-icons/react";
 import { X } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { GroupedTabButton } from "@/components/v2/buttons/GroupedTabButton";
 import { IconButton } from "@/components/v2/buttons/IconButton";
@@ -45,6 +45,14 @@ export function CreditSystemSchema({
 	const [mode, setMode] = useState<CreditSchemaMode>(() =>
 		deriveInitialMode(schema),
 	);
+
+	const hasSyncedFromPrefill = useRef(schema[0]?.metered_feature_id !== "");
+	useEffect(() => {
+		if (!hasSyncedFromPrefill.current && schema[0]?.metered_feature_id) {
+			hasSyncedFromPrefill.current = true;
+			setMode(deriveInitialMode(schema));
+		}
+	}, [schema]);
 
 	const handleModeChange = (newMode: string) => {
 		const typedMode = newMode as CreditSchemaMode;
