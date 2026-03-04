@@ -83,6 +83,7 @@ function CreateFeatureSheet({
 								credit_cost: x.credit_amount,
 								cost_per_million_input: x.cost_per_million_input,
 								cost_per_million_output: x.cost_per_million_output,
+								markup: x.markup,
 							}),
 						),
 						event_names: feature.event_names,

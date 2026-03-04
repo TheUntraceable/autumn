@@ -1,3 +1,8 @@
+import type { CreateFeature, CreditSchemaItem, Feature } from "@autumn/shared";
+import { FeatureType } from "@autumn/shared";
+import type { AxiosError } from "axios";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { ShortcutButton } from "@/components/v2/buttons/ShortcutButton";
 import {
 	SheetFooter,
@@ -8,11 +13,6 @@ import { useFeaturesQuery } from "@/hooks/queries/useFeaturesQuery";
 import { FeatureService } from "@/services/FeatureService";
 import { useAxiosInstance } from "@/services/useAxiosInstance";
 import { getBackendErr } from "@/utils/genUtils";
-import type { CreateFeature, CreditSchemaItem, Feature } from "@autumn/shared";
-import { FeatureType } from "@autumn/shared";
-import type { AxiosError } from "axios";
-import { useEffect, useState } from "react";
-import { toast } from "sonner";
 import { validateCreditSystem } from "../utils/validateCreditSystem";
 import { CreditSystemDetails } from "./CreditSystemDetails";
 import { CreditSystemSchema } from "./CreditSystemSchema";
@@ -94,6 +94,7 @@ function UpdateCreditSystemSheet({
 								x.cost_per_million_output != null
 									? Number(x.cost_per_million_output)
 									: undefined,
+							markup: x.markup,
 						}),
 					),
 					event_names: creditSystem.event_names,

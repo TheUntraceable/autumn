@@ -1,7 +1,3 @@
-import { type Feature, FeatureType, FeatureUsageType } from "@autumn/shared";
-import type { AxiosError } from "axios";
-import { useEffect, useState } from "react";
-import { toast } from "sonner";
 import { ShortcutButton } from "@/components/v2/buttons/ShortcutButton";
 import {
 	SheetFooter,
@@ -13,6 +9,15 @@ import { useFeatureStore } from "@/hooks/stores/useFeatureStore";
 import { FeatureService } from "@/services/FeatureService";
 import { useAxiosInstance } from "@/services/useAxiosInstance";
 import { getBackendErr } from "@/utils/genUtils";
+import {
+	type CreditSchemaItem,
+	type Feature,
+	FeatureType,
+	FeatureUsageType,
+} from "@autumn/shared";
+import type { AxiosError } from "axios";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { NewFeatureAdvanced } from "../../plan/components/new-feature/NewFeatureAdvanced";
 import { NewFeatureBehaviour } from "../../plan/components/new-feature/NewFeatureBehaviour";
 import { NewFeatureDetails } from "../../plan/components/new-feature/NewFeatureDetails";
@@ -61,6 +66,15 @@ function UpdateFeatureSheet({
 				consumable: feature.config?.usage_type === FeatureUsageType.Single,
 				event_names: feature.event_names,
 				display: undefined,
+				credit_schema: feature.config?.schema?.map(
+					(item: CreditSchemaItem) => ({
+						metered_feature_id: item.metered_feature_id,
+						credit_cost: item.credit_amount,
+						cost_per_million_input: item.cost_per_million_input,
+						cost_per_million_output: item.cost_per_million_output,
+						markup: item.markup,
+					}),
+				),
 			});
 
 			await refetch();
@@ -110,10 +124,7 @@ function UpdateFeatureSheet({
 				<div className="flex-1 overflow-y-auto">
 					<NewFeatureDetails feature={feature} setFeature={setFeature} />
 					<NewFeatureType feature={feature} setFeature={setFeature} />
-					<NewFeatureBehaviour
-						feature={feature}
-						setFeature={setFeature}
-					/>
+					<NewFeatureBehaviour feature={feature} setFeature={setFeature} />
 					<NewFeatureAdvanced feature={feature} setFeature={setFeature} />
 				</div>
 

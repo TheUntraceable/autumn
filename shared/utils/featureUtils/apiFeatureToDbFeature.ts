@@ -225,6 +225,9 @@ export const dbToApiFeatureV1 = ({
 			(schema: CreditSchemaItem) => ({
 				metered_feature_id: schema.metered_feature_id,
 				credit_cost: schema.credit_amount,
+				cost_per_million_input: schema.cost_per_million_input,
+				cost_per_million_output: schema.cost_per_million_output,
+				markup: schema.markup,
 			}),
 		),
 		event_names: dbFeature.event_names,

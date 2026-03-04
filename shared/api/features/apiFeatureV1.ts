@@ -40,6 +40,9 @@ export const ApiFeatureV1Schema = z.object({
 				cost_per_million_output: z.number().optional().meta({
 					description: "Cost per million output tokens for AI models.",
 				}),
+				markup: z.number().optional().meta({
+					description: "Markup percentage applied on top of the AI model cost.",
+				}),
 			}),
 		)
 		.optional()

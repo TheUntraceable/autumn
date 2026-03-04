@@ -55,7 +55,6 @@ export function AiCreditSchemaRow({
 					isLoading={isLoading}
 				/>
 			</div>
-
 			<div>
 				<div className="text-xs font-medium text-t-tertiary mb-1 lg:hidden">
 					Input

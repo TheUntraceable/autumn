@@ -52,23 +52,28 @@ export function AiCreditSchema({
 	const handleMarkupChange = (index: number, value: number) => {
 		const item = schema[index];
 		const model = models.find((m) => m.id === item.metered_feature_id);
-		if (!model) return;
 
 		if (item.metered_feature_id)
 			manuallyEditedModels.current.add(item.metered_feature_id);
 
-		const multiplier = 1 + value / 100;
-		const actualInput =
-			(Number.parseFloat(model.pricing.prompt) || 0) * 1_000_000;
-		const actualOutput =
-			(Number.parseFloat(model.pricing.completion) || 0) * 1_000_000;
 		const newSchema = [...schema];
-		newSchema[index] = {
-			...item,
-			markup: value,
-			cost_per_million_input: actualInput * multiplier,
-			cost_per_million_output: actualOutput * multiplier,
-		};
+
+		if (!model) {
+			newSchema[index] = { ...item, markup: value };
+		} else {
+			const multiplier = 1 + value / 100;
+			const actualInput =
+				(Number.parseFloat(model.pricing.prompt) || 0) * 1_000_000;
+			const actualOutput =
+				(Number.parseFloat(model.pricing.completion) || 0) * 1_000_000;
+			newSchema[index] = {
+				...item,
+				markup: value,
+				cost_per_million_input: actualInput * multiplier,
+				cost_per_million_output: actualOutput * multiplier,
+			};
+		}
+
 		setCreditSystem({
 			...creditSystem,
 			config: { ...creditSystem.config, schema: newSchema },
