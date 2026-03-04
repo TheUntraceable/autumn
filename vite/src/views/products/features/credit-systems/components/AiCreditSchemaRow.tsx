@@ -41,60 +41,80 @@ export function AiCreditSchemaRow({
 	const userOutput = item.cost_per_million_output;
 
 	return (
-		<div className="grid grid-cols-[2fr_auto_auto_auto_auto_auto_auto] gap-2 items-center">
-			<AiModelSelectDropdown
-				value={item.metered_feature_id}
-				onValueChange={(_modelId, selectedModel) =>
-					onModelChange(index, selectedModel)
-				}
-				models={models}
-				isLoading={isLoading}
-			/>
+		<div className="grid grid-cols-1 lg:grid-cols-[2fr_auto_auto_auto_auto_auto_auto] gap-3 lg:gap-2 items-start lg:items-center p-3 lg:p-0 bg-muted/20 lg:bg-transparent rounded-md lg:rounded-none border lg:border-0 border-border/30">
+			<div>
+				<div className="text-xs font-medium text-t-tertiary mb-1 lg:hidden">Model</div>
+				<AiModelSelectDropdown
+					value={item.metered_feature_id}
+					onValueChange={(_modelId, selectedModel) =>
+						onModelChange(index, selectedModel)
+					}
+					models={models}
+					isLoading={isLoading}
+				/>
+			</div>
 
-			<Input
-				readOnly
-				value={formatCost(actualInput)}
-				className="w-24 bg-muted/30 text-t-secondary cursor-default"
-				tabIndex={-1}
-			/>
+			<div>
+				<div className="text-xs font-medium text-t-tertiary mb-1 lg:hidden">Input</div>
+				<Input
+					readOnly
+					value={formatCost(actualInput)}
+					className="w-full lg:w-24 bg-background lg:bg-muted/30 text-t-secondary cursor-default"
+					tabIndex={-1}
+				/>
+			</div>
 
-			<Input
-				readOnly
-				value={formatCost(actualOutput)}
-				className="w-24 bg-muted/30 text-t-secondary cursor-default"
-				tabIndex={-1}
-			/>
+			<div>
+				<div className="text-xs font-medium text-t-tertiary mb-1 lg:hidden">Output</div>
+				<Input
+					readOnly
+					value={formatCost(actualOutput)}
+					className="w-full lg:w-24 bg-background lg:bg-muted/30 text-t-secondary cursor-default"
+					tabIndex={-1}
+				/>
+			</div>
 
-			<Input
-				type="number"
-				lang="en"
-				value={markup}
-				onChange={(e) => onMarkupChange(index, Number(e.target.value) || 0)}
-				onBlur={(e) => onMarkupChange(index, Number(e.target.value) || 0)}
-				placeholder="0"
-				className="w-20"
-			/>
+			<div>
+				<div className="text-xs font-medium text-t-tertiary mb-1 lg:hidden">Markup</div>
+				<Input
+					type="number"
+					lang="en"
+					value={markup}
+					onChange={(e) => onMarkupChange(index, Number(e.target.value) || 0)}
+					onBlur={(e) => onMarkupChange(index, Number(e.target.value) || 0)}
+					placeholder="0"
+					className="w-full lg:w-20"
+				/>
+			</div>
 
-			<Input
-				readOnly
-				value={formatCost(userInput)}
-				className="w-24 bg-muted/30 text-t-secondary cursor-default"
-				tabIndex={-1}
-			/>
+			<div>
+				<div className="text-xs font-medium text-t-tertiary mb-1 lg:hidden">User Input</div>
+				<Input
+					readOnly
+					value={formatCost(userInput)}
+					className="w-full lg:w-24 bg-background lg:bg-muted/30 text-t-secondary cursor-default"
+					tabIndex={-1}
+				/>
+			</div>
 
-			<Input
-				readOnly
-				value={formatCost(userOutput)}
-				className="w-24 bg-muted/30 text-t-secondary cursor-default"
-				tabIndex={-1}
-			/>
+			<div>
+				<div className="text-xs font-medium text-t-tertiary mb-1 lg:hidden">User Output</div>
+				<Input
+					readOnly
+					value={formatCost(userOutput)}
+					className="w-full lg:w-24 bg-background lg:bg-muted/30 text-t-secondary cursor-default"
+					tabIndex={-1}
+				/>
+			</div>
 
-			<IconButton
-				variant="skeleton"
-				iconOrientation="center"
-				icon={<X />}
-				onClick={() => onRemove(index)}
-			/>
+			<div className="flex justify-end lg:justify-center lg:items-center pt-6 lg:pt-0">
+				<IconButton
+					variant="skeleton"
+					iconOrientation="center"
+					icon={<X />}
+					onClick={() => onRemove(index)}
+				/>
+			</div>
 		</div>
 	);
 }

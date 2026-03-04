@@ -1,9 +1,3 @@
-import type { CreateFeature, CreditSchemaItem, Feature } from "@autumn/shared";
-import { FeatureType } from "@autumn/shared";
-import { PlusIcon } from "@phosphor-icons/react";
-import { X } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { toast } from "sonner";
 import { GroupedTabButton } from "@/components/v2/buttons/GroupedTabButton";
 import { IconButton } from "@/components/v2/buttons/IconButton";
 import { FormLabel } from "@/components/v2/form/FormLabel";
@@ -13,6 +7,12 @@ import { useFeaturesQuery } from "@/hooks/queries/useFeaturesQuery";
 import type { OpenRouterModel } from "@/hooks/queries/useOpenRouterModels";
 import { useOpenRouterModels } from "@/hooks/queries/useOpenRouterModels";
 import { FeatureSelectDropdown } from "@/views/products/features/credit-systems/components/FeatureSelectDropdown";
+import type { CreateFeature, CreditSchemaItem, Feature } from "@autumn/shared";
+import { FeatureType } from "@autumn/shared";
+import { PlusIcon } from "@phosphor-icons/react";
+import { X } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
 import { AiCreditSchemaRow } from "./AiCreditSchemaRow";
 
 type CreditSchemaMode = "classic" | "ai";
@@ -240,7 +240,10 @@ export function CreditSystemSchema({
 								);
 
 								return (
-									<div key={index} className="grid grid-cols-2 gap-2">
+									<div
+										key={index}
+										className="grid grid-cols-1 lg:grid-cols-2 gap-2"
+									>
 										<FeatureSelectDropdown
 											value={item.metered_feature_id}
 											onValueChange={(featureId) =>
@@ -299,7 +302,7 @@ export function CreditSystemSchema({
 					</div>
 				) : (
 					<div className="flex flex-col gap-0">
-						<div className="grid grid-cols-[2fr_auto_auto_auto_auto_auto_auto] gap-2 mb-1">
+						<div className="hidden lg:grid lg:grid-cols-[2fr_auto_auto_auto_auto_auto_auto] gap-2 mb-1">
 							<FormLabel>Model</FormLabel>
 							<FormLabel className="w-24">Actual In $/M</FormLabel>
 							<FormLabel className="w-24">Actual Out $/M</FormLabel>

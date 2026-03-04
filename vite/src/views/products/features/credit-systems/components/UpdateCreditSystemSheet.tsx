@@ -1,8 +1,3 @@
-import type { CreateFeature, CreditSchemaItem, Feature } from "@autumn/shared";
-import { FeatureType } from "@autumn/shared";
-import type { AxiosError } from "axios";
-import { useEffect, useState } from "react";
-import { toast } from "sonner";
 import { ShortcutButton } from "@/components/v2/buttons/ShortcutButton";
 import {
 	SheetFooter,
@@ -13,6 +8,11 @@ import { useFeaturesQuery } from "@/hooks/queries/useFeaturesQuery";
 import { FeatureService } from "@/services/FeatureService";
 import { useAxiosInstance } from "@/services/useAxiosInstance";
 import { getBackendErr } from "@/utils/genUtils";
+import type { CreateFeature, CreditSchemaItem, Feature } from "@autumn/shared";
+import { FeatureType } from "@autumn/shared";
+import type { AxiosError } from "axios";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { validateCreditSystem } from "../utils/validateCreditSystem";
 import { CreditSystemDetails } from "./CreditSystemDetails";
 import { CreditSystemSchema } from "./CreditSystemSchema";
@@ -128,7 +128,7 @@ function UpdateCreditSystemSheet({
 
 	return (
 		<Sheet open={open} onOpenChange={setOpen}>
-			<SheetContent className="flex flex-col overflow-hidden md:max-w-3xl">
+			<SheetContent className="flex flex-col overflow-hidden max-w-[calc(100vw-2rem)] sm:max-w-xl md:max-w-3xl lg:max-w-4xl">
 				<SheetHeader
 					title="Update Credit System"
 					description="Modify how this credit system is configured"
