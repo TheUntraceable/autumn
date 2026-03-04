@@ -8,16 +8,29 @@ export const validateCreditSystem = (
 	}
 
 	if (creditSystem.config.schema.length === 0) {
-		return "Need at least one metered feature";
+		return "Need at least one item in the schema";
 	}
 
 	for (const item of creditSystem.config.schema) {
 		if (!item.metered_feature_id) {
-			return "Select a metered feature";
+			return "Select a feature or model for each row";
 		}
 
-		if (item.feature_amount <= 0 || item.credit_amount <= 0) {
-			return "Credit amount must be greater than 0";
+		const isAiItem =
+			item.cost_per_million_input != null ||
+			item.cost_per_million_output != null;
+
+		if (isAiItem) {
+			if (
+				(item.cost_per_million_input ?? 0) < 0 ||
+				(item.cost_per_million_output ?? 0) < 0
+			) {
+				return "Token costs must be 0 or greater";
+			}
+		} else {
+			if ((item.credit_amount ?? 0) <= 0) {
+				return "Credit amount must be greater than 0";
+			}
 		}
 	}
 
