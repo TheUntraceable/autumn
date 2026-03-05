@@ -102,7 +102,7 @@ export class FeatureService {
 			});
 		}
 
-		let updatedFeatures: typeof features.$inferSelect[] = [];
+		let updatedFeatures
 		if (internalId) {
 			updatedFeatures = await db
 				.update(features)
