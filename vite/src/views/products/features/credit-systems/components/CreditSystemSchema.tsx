@@ -1,9 +1,9 @@
-import type { CreateFeature, CreditSchemaItem } from "@autumn/shared";
-import { useEffect, useMemo, useRef, useState } from "react";
 import { GroupedTabButton } from "@/components/v2/buttons/GroupedTabButton";
 import { SheetSection } from "@/components/v2/sheets/SharedSheetComponents";
 import type { OpenRouterModel } from "@/hooks/queries/useOpenRouterModels";
 import { useOpenRouterModels } from "@/hooks/queries/useOpenRouterModels";
+import type { CreateFeature, CreditSchemaItem } from "@autumn/shared";
+import { useEffect, useMemo, useState } from "react";
 import { AiCreditSchema } from "./AiCreditSchema";
 import { ClassicCreditSchema } from "./ClassicCreditSchema";
 
@@ -54,12 +54,8 @@ export function CreditSystemSchema({
 		deriveInitialMode(schema),
 	);
 
-	const hasSyncedFromPrefill = useRef(schema[0]?.metered_feature_id !== "");
 	useEffect(() => {
-		if (!hasSyncedFromPrefill.current && schema[0]?.metered_feature_id) {
-			hasSyncedFromPrefill.current = true;
-			setMode(deriveInitialMode(schema));
-		}
+		setMode(deriveInitialMode(schema));
 	}, [schema]);
 
 	const handleModeChange = (newMode: string) => {
@@ -94,7 +90,9 @@ export function CreditSystemSchema({
 				...creditSystem,
 				config: {
 					...creditSystem.config,
-					schema: [{ metered_feature_id: "", feature_amount: 1, credit_amount: 0 }],
+					schema: [
+						{ metered_feature_id: "", feature_amount: 1, credit_amount: 0 },
+					],
 				},
 			});
 		}
