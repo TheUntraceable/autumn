@@ -16,7 +16,24 @@ export const UpdateFeatureParamsSchema = z.object({
 				cost_per_million_output: z.number().optional(),
 			}),
 		)
-		.nullish(),
+		.nullish()
+		.refine(
+			(items) =>
+				!items ||
+				items.every(
+					(item) =>
+						typeof item.credit_cost === "number" ||
+						typeof item.cost_per_million_input === "number" ||
+						typeof item.cost_per_million_output === "number" ||
+						(typeof item.credit_cost === "number" &&
+							typeof item.cost_per_million_input === "number" &&
+							typeof item.cost_per_million_output === "number"),
+				),
+			{
+				message:
+					"Each credit_schema item must include credit_cost or cost_per_million_input/output and are mutually exclusive",
+			},
+		),
 
 	display: z
 		.object({
