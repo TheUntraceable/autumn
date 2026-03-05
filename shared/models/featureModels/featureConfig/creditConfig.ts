@@ -23,16 +23,17 @@ export const CreditSystemConfigSchema = z.object({
 			})
 			.refine((data) => {
 				if (
-					!data.credit_amount &&
-					!data.cost_per_million_input &&
-					!data.cost_per_million_output
+					data.credit_amount === undefined &&
+					data.cost_per_million_input === undefined &&
+					data.cost_per_million_output === undefined
 				) {
 					return false;
 				}
 				// Make cost_per_* and credit_amount mutually exclusive
 				if (
-					data.credit_amount &&
-					(data.cost_per_million_input || data.cost_per_million_output)
+					data.credit_amount !== undefined &&
+					(data.cost_per_million_input !== undefined ||
+						data.cost_per_million_output !== undefined)
 				) {
 					return false;
 				}
