@@ -264,22 +264,22 @@ function outputSingleFeature(
 			credit_amount?: number;
 			feature_amount?: number;
 		}>) {
-			const creditAmount = credit.credit_amount ?? credit.credit_cost;
+			const derivedCreditAmount = credit.credit_amount ?? credit.credit_cost;
 			const featureAmount = credit.feature_amount;
 			const normalizedFeatureAmount =
 				featureAmount && featureAmount > 0 ? featureAmount : undefined;
 			const creditCost =
 				credit.credit_cost ??
 				(normalizedFeatureAmount
-					? creditAmount !== undefined
-						? creditAmount / normalizedFeatureAmount
+					? derivedCreditAmount !== undefined
+						? derivedCreditAmount / normalizedFeatureAmount
 						: undefined
-					: creditAmount);
+					: derivedCreditAmount);
 			const creditCostDisplay =
 				creditCost === undefined ? "-" : String(creditCost);
 			const amountSuffix =
-				normalizedFeatureAmount && credit.credit_amount !== undefined
-					? ` (${creditAmount} per ${featureAmount})`
+				credit.credit_amount !== undefined && normalizedFeatureAmount
+					? ` (${derivedCreditAmount} per ${featureAmount})`
 					: "";
 			console.log(
 				`  - ${credit.metered_feature_id}: ${creditCostDisplay} credits${amountSuffix}`,

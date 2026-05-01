@@ -114,7 +114,7 @@ export function FeatureSheet({
 								index: number,
 							) => {
 								const featureAmount = item.feature_amount;
-								const creditAmount = item.credit_amount ?? item.credit_cost;
+								const derivedCreditAmount = item.credit_amount ?? item.credit_cost;
 								const normalizedFeatureAmount =
 									featureAmount && featureAmount > 0
 										? featureAmount
@@ -122,10 +122,10 @@ export function FeatureSheet({
 								const creditCost =
 									item.credit_cost ??
 									(normalizedFeatureAmount
-										? creditAmount !== undefined
-											? creditAmount / normalizedFeatureAmount
+										? derivedCreditAmount !== undefined
+											? derivedCreditAmount / normalizedFeatureAmount
 											: undefined
-										: creditAmount);
+										: derivedCreditAmount);
 								const creditCostDisplay =
 									creditCost === undefined ? "-" : creditCost;
 								const showAmounts =
@@ -149,7 +149,7 @@ export function FeatureSheet({
 												<>
 													<Text>
 														<Text color="gray">Credit Amount: </Text>
-														<Text color="cyan">{creditAmount}</Text>
+														<Text color="cyan">{derivedCreditAmount}</Text>
 													</Text>
 													<Text>
 														<Text color="gray">Feature Amount: </Text>

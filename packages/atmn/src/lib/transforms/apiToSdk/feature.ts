@@ -12,12 +12,14 @@ function mapCreditSchema(
 		const creditAmount =
 			schemaItem.credit_amount ?? schemaItem.creditAmount ?? null;
 		const hasExplicitCreditAmount =
-			schemaItem.credit_amount !== undefined ||
-			schemaItem.creditAmount !== undefined;
+			(schemaItem.credit_amount !== undefined &&
+				schemaItem.credit_amount !== null) ||
+			(schemaItem.creditAmount !== undefined &&
+				schemaItem.creditAmount !== null);
 		const featureAmount =
 			schemaItem.feature_amount ?? schemaItem.featureAmount ?? undefined;
-		const creditAmountOrCost = creditAmount ?? perUnitCreditCost;
-		if (creditAmountOrCost === undefined || creditAmountOrCost === null) {
+		const resolvedCreditValue = creditAmount ?? perUnitCreditCost;
+		if (resolvedCreditValue === undefined || resolvedCreditValue === null) {
 			throw new Error(
 				"Credit schema entries must include credit_cost or credit_amount.",
 			);
@@ -28,7 +30,7 @@ function mapCreditSchema(
 			featureAmount?: number;
 		} = {
 			meteredFeatureId,
-			creditCost: creditAmountOrCost,
+			creditCost: resolvedCreditValue,
 		};
 		if (hasExplicitCreditAmount && featureAmount !== undefined) {
 			entry.featureAmount = featureAmount;
