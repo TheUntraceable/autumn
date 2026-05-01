@@ -63,6 +63,27 @@ describe("Transformer", () => {
 			expect(result.consumable).toBe(true);
 			expect(result.creditSchema).toHaveLength(1);
 		});
+
+		test("credit_system with feature_amount", () => {
+			const apiFeature = {
+				id: "credits",
+				name: "Credits",
+				type: "credit_system",
+				credit_schema: [
+					{
+						metered_feature_id: "api_calls",
+						credit_amount: 12,
+						feature_amount: 1000,
+					},
+				],
+			};
+
+			const result = transformApiFeature(apiFeature);
+
+			expect(result.creditSchema).toEqual([
+				{ meteredFeatureId: "api_calls", creditCost: 12, featureAmount: 1000 },
+			]);
+		});
 	});
 
 	describe("Plan transforms", () => {

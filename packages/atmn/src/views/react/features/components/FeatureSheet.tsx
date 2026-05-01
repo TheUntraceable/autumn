@@ -103,20 +103,55 @@ export function FeatureSheet({
 				feature.credit_schema &&
 				feature.credit_schema.length > 0 && (
 					<SheetSection title="Credit Schema">
-						{feature.credit_schema.map((item: { metered_feature_id: string; credit_cost: number }, index: number) => (
-							<Box key={item.metered_feature_id} flexDirection="column">
-								<Text>
-									<Text color="gray">{index + 1}. </Text>
-									<Text bold>{item.metered_feature_id}</Text>
-								</Text>
-								<Box paddingLeft={2}>
-									<Text>
-										<Text color="gray">Credit Cost: </Text>
-										<Text color="cyan">{item.credit_cost}</Text>
-									</Text>
-								</Box>
-							</Box>
-						))}
+						{feature.credit_schema.map(
+							(
+								item: {
+									metered_feature_id: string;
+									credit_cost?: number;
+									credit_amount?: number;
+									feature_amount?: number;
+								},
+								index: number,
+							) => {
+								const featureAmount = item.feature_amount;
+								const creditAmount =
+									item.credit_amount ?? item.credit_cost ?? 0;
+								const creditCost =
+									item.credit_cost ??
+									(featureAmount ? creditAmount / featureAmount : creditAmount);
+								const showAmounts =
+									featureAmount !== undefined && item.credit_amount !== undefined;
+
+								return (
+									<Box key={item.metered_feature_id} flexDirection="column">
+										<Text>
+											<Text color="gray">{index + 1}. </Text>
+											<Text bold>{item.metered_feature_id}</Text>
+										</Text>
+										<Box paddingLeft={2} flexDirection="column">
+											<Text>
+												<Text color="gray">
+													Credit Cost{showAmounts ? " (per unit)" : ""}:{" "}
+												</Text>
+												<Text color="cyan">{creditCost}</Text>
+											</Text>
+											{showAmounts && (
+												<>
+													<Text>
+														<Text color="gray">Credit Amount: </Text>
+														<Text color="cyan">{creditAmount}</Text>
+													</Text>
+													<Text>
+														<Text color="gray">Feature Amount: </Text>
+														<Text color="cyan">{featureAmount}</Text>
+													</Text>
+												</>
+											)}
+										</Box>
+									</Box>
+								);
+							},
+						)}
 					</SheetSection>
 				)}
 

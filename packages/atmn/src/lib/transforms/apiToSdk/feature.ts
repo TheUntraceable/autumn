@@ -3,13 +3,32 @@ import { createTransformer } from "./Transformer.js";
 
 function mapCreditSchema(
 	api: any,
-): Array<{ meteredFeatureId: string; creditCost: number }> {
-	return (api.credit_schema ?? []).map(
-		(cs: { metered_feature_id: string; credit_cost: number }) => ({
-			meteredFeatureId: cs.metered_feature_id,
-			creditCost: cs.credit_cost,
-		}),
-	);
+): Array<{ meteredFeatureId: string; creditCost: number; featureAmount?: number }> {
+	return (api.credit_schema ?? []).map((schemaItem: any) => {
+		const meteredFeatureId =
+			schemaItem.metered_feature_id ?? schemaItem.meteredFeatureId;
+		const creditAmount =
+			schemaItem.credit_amount ?? schemaItem.creditAmount ?? null;
+		const featureAmount =
+			schemaItem.feature_amount ?? schemaItem.featureAmount ?? undefined;
+		const creditCost =
+			creditAmount ??
+			schemaItem.credit_cost ??
+			schemaItem.creditCost ??
+			0;
+		const entry: {
+			meteredFeatureId: string;
+			creditCost: number;
+			featureAmount?: number;
+		} = {
+			meteredFeatureId,
+			creditCost,
+		};
+		if (creditAmount !== null && featureAmount !== undefined) {
+			entry.featureAmount = featureAmount;
+		}
+		return entry;
+	});
 }
 
 const BASE_COMPUTE = {

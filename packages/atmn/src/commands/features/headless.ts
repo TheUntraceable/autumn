@@ -258,8 +258,24 @@ function outputSingleFeature(
 	if (feature.credit_schema && feature.credit_schema.length > 0) {
 		console.log("");
 		console.log(`Credit Schema (${feature.credit_schema.length}):`);
-		for (const credit of feature.credit_schema) {
-			console.log(`  - ${credit.metered_feature_id}: ${credit.credit_cost} credits`);
+		for (const credit of feature.credit_schema as Array<{
+			metered_feature_id: string;
+			credit_cost?: number;
+			credit_amount?: number;
+			feature_amount?: number;
+		}>) {
+			const creditAmount = credit.credit_amount ?? credit.credit_cost;
+			const featureAmount = credit.feature_amount;
+			const creditCost =
+				credit.credit_cost ??
+				(featureAmount ? creditAmount / featureAmount : creditAmount);
+			const amountSuffix =
+				featureAmount && credit.credit_amount !== undefined
+					? ` (${creditAmount} per ${featureAmount})`
+					: "";
+			console.log(
+				`  - ${credit.metered_feature_id}: ${creditCost} credits${amountSuffix}`,
+			);
 		}
 	}
 }

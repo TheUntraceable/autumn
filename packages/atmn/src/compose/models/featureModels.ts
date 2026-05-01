@@ -21,12 +21,16 @@ export const FeatureSchema = z.object({
   creditSchema: z
     .array(
     z.object({
-    metered_feature_id: z.string().meta({
+    meteredFeatureId: z.string().meta({
     description:
     "ID of the metered feature that draws from this credit system.",
     }),
-    credit_cost: z.number().meta({
-    description: "Credits consumed per unit of the metered feature.",
+    creditCost: z.number().meta({
+    description: "Credits consumed per feature amount (defaults to per 1 unit).",
+    }),
+    featureAmount: z.number().optional().meta({
+    description:
+    "Units of the metered feature that the credit cost applies to (defaults to 1).",
     }),
     }),
     )
@@ -57,6 +61,7 @@ type FeatureBase = {
   creditSchema?: Array<{
     meteredFeatureId: string;
     creditCost: number;
+    featureAmount?: number;
   }>;
 };
 
@@ -82,6 +87,7 @@ export type CreditSystemFeature = FeatureBase & {
   creditSchema: Array<{
     meteredFeatureId: string;
     creditCost: number;
+    featureAmount?: number;
   }>;
 };
 
@@ -92,4 +98,3 @@ export type CreditSystemFeature = FeatureBase & {
  * - Credit system features are always consumable and require creditSchema
  */
 export type Feature = BooleanFeature | MeteredFeature | CreditSystemFeature;
-

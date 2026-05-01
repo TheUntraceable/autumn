@@ -13,6 +13,17 @@ export interface ApiFeatureParams {
 	}>;
 }
 
+function getCreditCost({
+	creditCost,
+	featureAmount,
+}: {
+	creditCost: number;
+	featureAmount?: number;
+}): number {
+	const normalizedFeatureAmount = featureAmount && featureAmount > 0 ? featureAmount : 1;
+	return creditCost / normalizedFeatureAmount;
+}
+
 export function transformFeatureToApi(feature: Feature): ApiFeatureParams {
 	const base: ApiFeatureParams = {
 		id: feature.id,
@@ -35,7 +46,10 @@ export function transformFeatureToApi(feature: Feature): ApiFeatureParams {
 	if (feature.type === "credit_system" && feature.creditSchema) {
 		base.credit_schema = feature.creditSchema.map((entry) => ({
 			metered_feature_id: entry.meteredFeatureId,
-			credit_cost: entry.creditCost,
+			credit_cost: getCreditCost({
+				creditCost: entry.creditCost,
+				featureAmount: entry.featureAmount,
+			}),
 		}));
 	}
 

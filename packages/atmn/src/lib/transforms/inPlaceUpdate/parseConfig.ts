@@ -67,6 +67,9 @@ function determineEntityType(lines: string[]): "feature" | "plan" | null {
 	if (/type:\s*['"](?:boolean|metered|credit_system)['"]/.test(joined)) {
 		return "feature";
 	}
+	if (/creditSchema\s*:/.test(joined)) {
+		return "feature";
+	}
 	// Also check for feature() function call
 	if (/=\s*feature\s*\(/.test(joined)) {
 		return "feature";

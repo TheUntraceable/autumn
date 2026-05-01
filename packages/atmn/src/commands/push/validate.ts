@@ -293,6 +293,38 @@ function validateFeature(feature: Feature): ValidationError[] {
 				message: `"creditSchema" is required for credit_system features.`,
 			});
 		}
+
+		if (feature.creditSchema) {
+			feature.creditSchema.forEach((creditSchemaItem, creditSchemaIndex) => {
+				const creditSchemaPath = `feature "${featureId}" → creditSchema[${creditSchemaIndex}]`;
+				if (!creditSchemaItem.meteredFeatureId) {
+					errors.push({
+						path: creditSchemaPath,
+						message: `"meteredFeatureId" is required for credit system entries.`,
+					});
+				}
+				if (
+					typeof creditSchemaItem.creditCost !== "number" ||
+					Number.isNaN(creditSchemaItem.creditCost)
+				) {
+					errors.push({
+						path: creditSchemaPath,
+						message: `"creditCost" must be a number for credit system entries.`,
+					});
+				}
+				if (
+					creditSchemaItem.featureAmount !== undefined &&
+					(typeof creditSchemaItem.featureAmount !== "number" ||
+						Number.isNaN(creditSchemaItem.featureAmount) ||
+						creditSchemaItem.featureAmount <= 0)
+				) {
+					errors.push({
+						path: creditSchemaPath,
+						message: `"featureAmount" must be a positive number when provided.`,
+					});
+				}
+			});
+		}
 	}
 
 	return errors;

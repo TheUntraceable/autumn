@@ -43,7 +43,13 @@ function normalizeFeatureForCompare(f: Feature): Rec {
 	if (f.creditSchema && f.creditSchema.length > 0) {
 		result.creditSchema = [...f.creditSchema]
 			.sort((a, b) => a.meteredFeatureId.localeCompare(b.meteredFeatureId))
-			.map((cs) => ({ meteredFeatureId: cs.meteredFeatureId, creditCost: cs.creditCost }));
+			.map((cs) => ({
+				meteredFeatureId: cs.meteredFeatureId,
+				creditCost:
+					cs.creditCost / (cs.featureAmount && cs.featureAmount > 0
+						? cs.featureAmount
+						: 1),
+			}));
 	}
 	return result;
 }

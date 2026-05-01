@@ -40,7 +40,7 @@ Features define what can be gated, metered, or billed in your app.
 | \`type\` | enum | Yes | \`"boolean"\` \\| \`"metered"\` \\| \`"credit_system"\` |
 | \`consumable\` | boolean | For metered | \`true\` = consumed (messages, API calls), \`false\` = ongoing (seats, storage). |
 | \`eventNames\` | string[] | No | Event names that trigger this feature. Allows multiple features to respond to a single event. |
-| \`creditSchema\` | array | For credit_system | Maps metered features to credit costs. Each entry: \`{ meteredFeatureId, creditCost }\`. |
+| \`creditSchema\` | array | For credit_system | Maps metered features to credit costs. Each entry: \`{ meteredFeatureId, creditCost, featureAmount? }\` (featureAmount defaults to 1). |
 
 ### Feature Types
 
@@ -103,6 +103,8 @@ export const credits = feature({
   ],
 });
 \`\`\`
+
+Use \`featureAmount\` to express costs per N units (defaults to 1 if omitted).
 
 If you set the price per credit to 1 cent, credits become monetary credits (eg, 5 credits = $0.05 per premium message).
 

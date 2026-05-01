@@ -345,7 +345,10 @@ function normalizeFeatureForCompare(f: Feature): Record<string, unknown> {
 			.sort((a, b) => a.meteredFeatureId.localeCompare(b.meteredFeatureId))
 			.map((cs) => ({
 				meteredFeatureId: cs.meteredFeatureId,
-				creditCost: cs.creditCost,
+				creditCost:
+					cs.creditCost / (cs.featureAmount && cs.featureAmount > 0
+						? cs.featureAmount
+						: 1),
 			}));
 	}
 
