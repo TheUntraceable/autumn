@@ -114,7 +114,7 @@ export function FeatureSheet({
 								index: number,
 							) => {
 								const featureAmount = item.feature_amount;
-								const creditAmount = item.credit_amount ?? item.credit_cost ?? 0;
+								const creditAmount = item.credit_amount ?? item.credit_cost;
 								const normalizedFeatureAmount =
 									featureAmount && featureAmount > 0
 										? featureAmount
@@ -122,8 +122,12 @@ export function FeatureSheet({
 								const creditCost =
 									item.credit_cost ??
 									(normalizedFeatureAmount
-										? creditAmount / normalizedFeatureAmount
+										? creditAmount !== undefined
+											? creditAmount / normalizedFeatureAmount
+											: undefined
 										: creditAmount);
+								const creditCostDisplay =
+									creditCost === undefined ? "-" : creditCost;
 								const showAmounts =
 									normalizedFeatureAmount !== undefined &&
 									item.credit_amount !== undefined;
@@ -139,7 +143,7 @@ export function FeatureSheet({
 												<Text color="gray">
 													Credit Cost{showAmounts ? " (per unit)" : ""}:{" "}
 												</Text>
-												<Text color="cyan">{creditCost}</Text>
+												<Text color="cyan">{creditCostDisplay}</Text>
 											</Text>
 											{showAmounts && (
 												<>

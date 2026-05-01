@@ -264,21 +264,25 @@ function outputSingleFeature(
 			credit_amount?: number;
 			feature_amount?: number;
 		}>) {
-			const creditAmount = credit.credit_amount ?? credit.credit_cost ?? 0;
+			const creditAmount = credit.credit_amount ?? credit.credit_cost;
 			const featureAmount = credit.feature_amount;
 			const normalizedFeatureAmount =
 				featureAmount && featureAmount > 0 ? featureAmount : undefined;
 			const creditCost =
 				credit.credit_cost ??
 				(normalizedFeatureAmount
-					? creditAmount / normalizedFeatureAmount
+					? creditAmount !== undefined
+						? creditAmount / normalizedFeatureAmount
+						: undefined
 					: creditAmount);
+			const creditCostDisplay =
+				creditCost === undefined ? "-" : String(creditCost);
 			const amountSuffix =
 				normalizedFeatureAmount && credit.credit_amount !== undefined
 					? ` (${creditAmount} per ${featureAmount})`
 					: "";
 			console.log(
-				`  - ${credit.metered_feature_id}: ${creditCost} credits${amountSuffix}`,
+				`  - ${credit.metered_feature_id}: ${creditCostDisplay} credits${amountSuffix}`,
 			);
 		}
 	}
