@@ -114,13 +114,19 @@ export function FeatureSheet({
 								index: number,
 							) => {
 								const featureAmount = item.feature_amount;
-								const creditAmount =
-									item.credit_amount ?? item.credit_cost ?? 0;
+								const creditAmount = item.credit_amount ?? item.credit_cost ?? 0;
+								const normalizedFeatureAmount =
+									featureAmount && featureAmount > 0
+										? featureAmount
+										: undefined;
 								const creditCost =
 									item.credit_cost ??
-									(featureAmount ? creditAmount / featureAmount : creditAmount);
+									(normalizedFeatureAmount
+										? creditAmount / normalizedFeatureAmount
+										: creditAmount);
 								const showAmounts =
-									featureAmount !== undefined && item.credit_amount !== undefined;
+									normalizedFeatureAmount !== undefined &&
+									item.credit_amount !== undefined;
 
 								return (
 									<Box key={item.metered_feature_id} flexDirection="column">

@@ -264,13 +264,17 @@ function outputSingleFeature(
 			credit_amount?: number;
 			feature_amount?: number;
 		}>) {
-			const creditAmount = credit.credit_amount ?? credit.credit_cost;
+			const creditAmount = credit.credit_amount ?? credit.credit_cost ?? 0;
 			const featureAmount = credit.feature_amount;
+			const normalizedFeatureAmount =
+				featureAmount && featureAmount > 0 ? featureAmount : undefined;
 			const creditCost =
 				credit.credit_cost ??
-				(featureAmount ? creditAmount / featureAmount : creditAmount);
+				(normalizedFeatureAmount
+					? creditAmount / normalizedFeatureAmount
+					: creditAmount);
 			const amountSuffix =
-				featureAmount && credit.credit_amount !== undefined
+				normalizedFeatureAmount && credit.credit_amount !== undefined
 					? ` (${creditAmount} per ${featureAmount})`
 					: "";
 			console.log(

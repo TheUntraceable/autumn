@@ -7,15 +7,13 @@ function mapCreditSchema(
 	return (api.credit_schema ?? []).map((schemaItem: any) => {
 		const meteredFeatureId =
 			schemaItem.metered_feature_id ?? schemaItem.meteredFeatureId;
+		const perUnitCreditCost =
+			schemaItem.credit_cost ?? schemaItem.creditCost ?? undefined;
 		const creditAmount =
 			schemaItem.credit_amount ?? schemaItem.creditAmount ?? null;
 		const featureAmount =
 			schemaItem.feature_amount ?? schemaItem.featureAmount ?? undefined;
-		const creditCost =
-			creditAmount ??
-			schemaItem.credit_cost ??
-			schemaItem.creditCost ??
-			0;
+		const creditCost = creditAmount ?? perUnitCreditCost ?? 0;
 		const entry: {
 			meteredFeatureId: string;
 			creditCost: number;
