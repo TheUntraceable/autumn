@@ -11,6 +11,9 @@ function mapCreditSchema(
 			schemaItem.credit_cost ?? schemaItem.creditCost ?? undefined;
 		const creditAmount =
 			schemaItem.credit_amount ?? schemaItem.creditAmount ?? null;
+		const hasExplicitCreditAmount =
+			schemaItem.credit_amount !== undefined ||
+			schemaItem.creditAmount !== undefined;
 		const featureAmount =
 			schemaItem.feature_amount ?? schemaItem.featureAmount ?? undefined;
 		const creditCost = creditAmount ?? perUnitCreditCost ?? 0;
@@ -22,7 +25,7 @@ function mapCreditSchema(
 			meteredFeatureId,
 			creditCost,
 		};
-		if (creditAmount !== null && featureAmount !== undefined) {
+		if (hasExplicitCreditAmount && featureAmount !== undefined) {
 			entry.featureAmount = featureAmount;
 		}
 		return entry;
