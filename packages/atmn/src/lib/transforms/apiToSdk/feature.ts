@@ -20,8 +20,9 @@ function mapCreditSchema(
 			schemaItem.feature_amount ?? schemaItem.featureAmount ?? undefined;
 		const resolvedCreditValue = creditAmount ?? perUnitCreditCost;
 		if (resolvedCreditValue === undefined || resolvedCreditValue === null) {
+			const entryId = meteredFeatureId ?? "unknown";
 			throw new Error(
-				"Credit schema entries must include credit_cost or credit_amount.",
+				`Credit schema entry "${entryId}" must include credit_cost or credit_amount.`,
 			);
 		}
 		const entry: {
