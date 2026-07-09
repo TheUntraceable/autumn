@@ -30,7 +30,7 @@ const { text } = await generateText({ model, prompt: "Hello!" });
 // usage tracked automatically — streaming too
 ```
 
-The wrapped model is a drop-in `LanguageModelV3`. Usage is read from the response (or the stream's finish chunk) and reported as `<provider>/<model>` (e.g. `anthropic/claude-sonnet-4-5`). If your provider's name doesn't match its models.dev key, override it with `providerId`.
+The wrapped model is a drop-in language model that keeps the wrapped model's spec version, so it works with both AI SDK v6 (`LanguageModelV3`) and v7 (`LanguageModelV4`). Usage is read from the response (or the stream's finish chunk) and reported as `<provider>/<model>` (e.g. `anthropic/claude-sonnet-4-5`). If your provider's name doesn't match its models.dev key, override it with `providerId`.
 
 ## OpenRouter
 

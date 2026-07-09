@@ -40,11 +40,11 @@
 		"prepublishOnly": "bun run build"
 	},
 	"dependencies": {
-		"@ai-sdk/provider": "^3.0.0"
+		"@ai-sdk/provider": "^4.0.0"
 	},
 	"peerDependencies": {
 		"@openrouter/sdk": "*",
-		"ai": "^6.0.116",
+		"ai": "^6.0.116 || ^7.0.0",
 		"autumn-js": "*"
 	},
 	"peerDependenciesMeta": {
@@ -58,7 +58,8 @@
 	"devDependencies": {
 		"@types/node": "^24.9.1",
 		"@typescript/native-preview": "7.0.0-dev.20260220.1",
-		"ai": "^6.0.116",
+		"ai": "7.0.16",
+		"ai-v6": "npm:ai@^6.0.116",
 		"tsup": "^8.4.0",
 		"typescript": "^5.8.3"
 	}
