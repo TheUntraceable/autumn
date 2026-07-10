@@ -6,7 +6,6 @@ export type { AutumnClient, AutumnTrackingOptions } from "../shared/track.js";
 export type { TokenPools } from "../shared/usage.js";
 export type { UsageLike } from "./usage.js";
 
-/** Language model spec versions supported by AI SDK v6 (V3) and v7 (V4). */
 export type SupportedLanguageModel = LanguageModelV3 | LanguageModelV4;
 
 export type WithAutumnOptions<
@@ -32,11 +31,6 @@ export const withAutumn = <TModel extends SupportedLanguageModel>({
 			modelId: modelName,
 		}));
 
-	// The V3 and V4 specs are identical in every member this wrapper touches
-	// (doGenerate/doStream shape, usage counts, the finish stream part), so the
-	// wrapper operates on a V3 view of the model. The Proxy below forwards
-	// everything else — including specificationVersion — so the wrapped model
-	// keeps its own spec version and works with both AI SDK v6 and v7.
 	const inner = model as LanguageModelV3;
 
 	const doGenerate: LanguageModelV3["doGenerate"] = async (options) => {

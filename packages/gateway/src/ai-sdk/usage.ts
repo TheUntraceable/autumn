@@ -15,7 +15,7 @@ type NestedTokens = {
 
 type LegacyCount = number | { total?: number | null } | null;
 
-/** Lenient view over AI SDK usage shapes: nested V3/V4 counts, flat counts with token details, and legacy prompt/completion counts. */
+/** Lenient view over AI SDK usage shapes: nested V3 counts, flat counts with token details, and legacy prompt/completion counts. */
 export type UsageLike = {
 	inputTokens?: number | NestedTokens | null;
 	outputTokens?: number | NestedTokens | null;
