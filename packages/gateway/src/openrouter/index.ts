@@ -1,7 +1,5 @@
-import {
-	type AutumnTrackingOptions,
-	createTracker,
-} from "../shared/track.js";
+import { createForwardingProxy } from "../shared/proxy.js";
+import { type AutumnTrackingOptions, createTracker } from "../shared/track.js";
 import { normalizeOpenRouterUsage, type OpenRouterUsageLike } from "./usage.js";
 
 export type { AutumnClient, AutumnTrackingOptions } from "../shared/track.js";
@@ -212,14 +210,8 @@ export const withAutumn = <T extends OpenRouterLike>(
 			}
 		}
 
-		return new Proxy(stream, {
-			get(target, prop, receiver) {
-				if (prop === Symbol.asyncIterator) {
-					return () => iterate();
-				}
-				const value = Reflect.get(target, prop, receiver);
-				return typeof value === "function" ? value.bind(target) : value;
-			},
+		return createForwardingProxy(stream, {
+			[Symbol.asyncIterator]: () => iterate(),
 		});
 	};
 
@@ -293,25 +285,8 @@ export const withAutumn = <T extends OpenRouterLike>(
 		},
 	);
 
-	const wrappedChat = new Proxy(openRouter.chat, {
-		get(target, prop, receiver) {
-			if (prop === "send") {
-				return send;
-			}
-			const value = Reflect.get(target, prop, receiver);
-			return typeof value === "function" ? value.bind(target) : value;
-		},
-	});
-
-	const wrapped = new Proxy(openRouter, {
-		get(target, prop, receiver) {
-			if (prop === "chat") {
-				return wrappedChat;
-			}
-			const value = Reflect.get(target, prop, receiver);
-			return typeof value === "function" ? value.bind(target) : value;
-		},
-	});
+	const wrappedChat = createForwardingProxy(openRouter.chat, { send });
+	const wrapped = createForwardingProxy(openRouter, { chat: wrappedChat });
 	// trackingSettled accepts either the wrapped or the underlying client.
 	pendingTracking.set(wrapped, pending);
 	return wrapped;

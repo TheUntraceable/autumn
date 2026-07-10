@@ -1,4 +1,5 @@
 import type { LanguageModelV3, LanguageModelV4 } from "@ai-sdk/provider";
+import { createForwardingProxy } from "../shared/proxy.js";
 import { type AutumnTrackingOptions, createTracker } from "../shared/track.js";
 import { normalizeUsage, type UsageLike } from "./usage.js";
 
@@ -7,6 +8,13 @@ export type { TokenPools } from "../shared/usage.js";
 export type { UsageLike } from "./usage.js";
 
 export type SupportedLanguageModel = LanguageModelV3 | LanguageModelV4;
+
+/**
+ * The wrapper reads only members that are identical across these spec
+ * versions (doGenerate/doStream shape, usage counts, the finish stream part);
+ * anything newer must be vetted before being let through.
+ */
+const SUPPORTED_SPEC_VERSIONS: ReadonlySet<string> = new Set(["v3", "v4"]);
 
 export type WithAutumnOptions<
 	TModel extends SupportedLanguageModel = SupportedLanguageModel,
@@ -22,6 +30,12 @@ export const withAutumn = <TModel extends SupportedLanguageModel>({
 	providerId,
 	...tracking
 }: WithAutumnOptions<TModel>): TModel => {
+	if (!SUPPORTED_SPEC_VERSIONS.has(model.specificationVersion)) {
+		throw new Error(
+			`[Autumn] Unsupported language model specification version "${model.specificationVersion}" — expected one of: ${[...SUPPORTED_SPEC_VERSIONS].join(", ")}.`,
+		);
+	}
+
 	const modelName = `${providerId ?? model.provider}/${model.modelId}`;
 	const track = createTracker(tracking);
 
@@ -66,16 +80,5 @@ export const withAutumn = <TModel extends SupportedLanguageModel>({
 		};
 	};
 
-	return new Proxy(model, {
-		get(target, property) {
-			if (property === "doGenerate") {
-				return doGenerate;
-			}
-			if (property === "doStream") {
-				return doStream;
-			}
-			const value: unknown = Reflect.get(target, property);
-			return typeof value === "function" ? value.bind(target) : value;
-		},
-	});
+	return createForwardingProxy(model, { doGenerate, doStream });
 };
