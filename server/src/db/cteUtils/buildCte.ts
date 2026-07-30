@@ -393,15 +393,15 @@ export class CTEBuilder {
 	}
 
 	/**
-	 * Build array field SQL (one-to-many)
+	 * Build the inner SELECT of a nested field: every target column plus the
+	 * nested WITH fields, filtered by the join condition and the config's WHERE
 	 */
-	private buildArrayField({
+	private buildNestedInnerSelect({
 		nestedConfig,
 		targetTable,
 		joinCondition,
 	}: {
 		nestedConfig: CTEConfig;
-		parentTable: PgTable;
 		targetTable: PgTable;
 		joinCondition?: SQL;
 	}): SQL {
@@ -424,7 +424,6 @@ export class CTEBuilder {
 			}
 		}
 
-		// Build the inner SELECT
 		let innerSelect = sql`SELECT ${sql.join(selectFields, sql`, `)} FROM ${sql.identifier(targetTableName)}`;
 
 		// Add WHERE clause (join condition + additional filters)
@@ -438,6 +437,28 @@ export class CTEBuilder {
 		} else if (nestedConfig.where) {
 			innerSelect = sql`${innerSelect} WHERE ${nestedConfig.where}`;
 		}
+
+		return innerSelect;
+	}
+
+	/**
+	 * Build array field SQL (one-to-many)
+	 */
+	private buildArrayField({
+		nestedConfig,
+		targetTable,
+		joinCondition,
+	}: {
+		nestedConfig: CTEConfig;
+		parentTable: PgTable;
+		targetTable: PgTable;
+		joinCondition?: SQL;
+	}): SQL {
+		let innerSelect = this.buildNestedInnerSelect({
+			nestedConfig,
+			targetTable,
+			joinCondition,
+		});
 
 		// Add ORDER BY
 		if (nestedConfig.orderBy && nestedConfig.orderBy.length > 0) {
@@ -469,39 +490,11 @@ export class CTEBuilder {
 		targetTable: PgTable;
 		joinCondition?: SQL;
 	}): SQL {
-		const targetTableName = getTableName(targetTable);
-
-		// Build SELECT fields - start with all columns
-		const selectFields: SQL[] = [sql`${sql.identifier(targetTableName)}.*`];
-
-		// Add nested WITH fields if they exist
-		if (nestedConfig.with) {
-			for (const [fieldName, nestedFieldConfig] of Object.entries(
-				nestedConfig.with,
-			)) {
-				const nestedSQL = this.buildNestedField({
-					fieldName,
-					nestedConfig: nestedFieldConfig,
-					parentTable: targetTable,
-				});
-				selectFields.push(sql`${nestedSQL} AS ${sql.identifier(fieldName)}`);
-			}
-		}
-
-		// Build the inner SELECT
-		let innerSelect = sql`SELECT ${sql.join(selectFields, sql`, `)} FROM ${sql.identifier(targetTableName)}`;
-
-		// Add WHERE clause (join condition + additional filters)
-		if (joinCondition) {
-			innerSelect = sql`${innerSelect} WHERE ${joinCondition}`;
-
-			// Add additional filters
-			if (nestedConfig.where) {
-				innerSelect = sql`${innerSelect} AND ${nestedConfig.where}`;
-			}
-		} else if (nestedConfig.where) {
-			innerSelect = sql`${innerSelect} WHERE ${nestedConfig.where}`;
-		}
+		const innerSelect = this.buildNestedInnerSelect({
+			nestedConfig,
+			targetTable,
+			joinCondition,
+		});
 
 		// Wrap in row_to_json with subquery
 		const subquery = sql`SELECT row_to_json(sub) FROM (${innerSelect}) sub`;

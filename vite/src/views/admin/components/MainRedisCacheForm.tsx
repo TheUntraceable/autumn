@@ -3,14 +3,6 @@ import {
 	AlertDescription,
 	AlertTitle,
 	Badge,
-	Button,
-	DialogFooter,
-	Select,
-	SelectContent,
-	SelectGroup,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
 	Separator,
 } from "@autumn/ui";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -24,6 +16,10 @@ import {
 	type MainRedisCacheConfig,
 	type MainRedisInstanceName,
 } from "./mainRedisCacheConfigTypes";
+import {
+	RedisCacheFormFooter,
+	RedisInstanceSelect,
+} from "./RedisCacheFormParts";
 
 export const MainRedisCacheForm = ({
 	config,
@@ -66,47 +62,14 @@ export const MainRedisCacheForm = ({
 			<div className="flex flex-col gap-6">
 				<form.Field name="activeInstance">
 					{(field) => (
-						<div className="flex flex-col gap-2">
-							<div className="text-xs font-medium uppercase tracking-wide text-tertiary-foreground">
-								Active instance
-							</div>
-							<Select
-								value={field.state.value}
-								onValueChange={(value) =>
-									field.handleChange(value as MainRedisInstanceName)
-								}
-								items={MAIN_REDIS_INSTANCE_OPTIONS.map((option) => ({
-									value: option.value,
-									label: option.label,
-								}))}
-							>
-								<SelectTrigger>
-									<SelectValue />
-								</SelectTrigger>
-								<SelectContent>
-									<SelectGroup>
-										{MAIN_REDIS_INSTANCE_OPTIONS.map((option) => (
-											<SelectItem
-												key={option.value}
-												value={option.value}
-												disabled={
-													option.value === "fallback" && fallbackUnavailable
-												}
-											>
-												<div className="flex flex-col">
-													<span className="text-sm text-foreground">
-														{option.label}
-													</span>
-													<span className="text-xs text-tertiary-foreground">
-														{option.description}
-													</span>
-												</div>
-											</SelectItem>
-										))}
-									</SelectGroup>
-								</SelectContent>
-							</Select>
-						</div>
+						<RedisInstanceSelect
+							value={field.state.value}
+							options={MAIN_REDIS_INSTANCE_OPTIONS}
+							onChange={(value) => field.handleChange(value)}
+							isOptionDisabled={(option) =>
+								option.value === "fallback" && fallbackUnavailable
+							}
+						/>
 					)}
 				</form.Field>
 
@@ -145,33 +108,22 @@ export const MainRedisCacheForm = ({
 				</div>
 			</div>
 
-			<DialogFooter className="flex-wrap pt-2">
-				{mutation.error && (
-					<span role="alert" className="mr-auto text-xs text-destructive">
-						{getBackendErr(mutation.error, "Failed to save config")}
-					</span>
+			<form.Subscribe
+				selector={(state) => ({
+					activeInstance: state.values.activeInstance,
+					isSubmitting: state.isSubmitting,
+				})}
+			>
+				{({ activeInstance, isSubmitting }) => (
+					<RedisCacheFormFooter
+						error={mutation.error}
+						isSubmitting={isSubmitting}
+						saveDisabled={activeInstance === config.activeInstance}
+						onSave={() => form.handleSubmit()}
+						onClose={onClose}
+					/>
 				)}
-				<Button variant="secondary" onClick={onClose}>
-					Cancel
-				</Button>
-				<form.Subscribe
-					selector={(state) => ({
-						activeInstance: state.values.activeInstance,
-						isSubmitting: state.isSubmitting,
-					})}
-				>
-					{({ activeInstance, isSubmitting }) => (
-						<Button
-							variant="primary"
-							onClick={() => form.handleSubmit()}
-							isLoading={isSubmitting}
-							disabled={activeInstance === config.activeInstance}
-						>
-							Save
-						</Button>
-					)}
-				</form.Subscribe>
-			</DialogFooter>
+			</form.Subscribe>
 		</>
 	);
 };

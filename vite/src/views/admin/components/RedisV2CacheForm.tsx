@@ -1,20 +1,13 @@
-import {
-	Badge,
-	Button,
-	DialogFooter,
-	Select,
-	SelectContent,
-	SelectGroup,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-	Separator,
-} from "@autumn/ui";
+import { Badge, Separator } from "@autumn/ui";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useAppForm } from "@/hooks/form/form";
 import { useAxiosInstance } from "@/services/useAxiosInstance";
 import { getBackendErr } from "@/utils/genUtils";
+import {
+	RedisCacheFormFooter,
+	RedisInstanceSelect,
+} from "./RedisCacheFormParts";
 import {
 	REDIS_V2_CACHE_QUERY_KEY,
 	REDIS_V2_INSTANCE_OPTIONS,
@@ -60,47 +53,18 @@ export const RedisV2CacheForm = ({
 			<div className="flex flex-col gap-6">
 				<form.Field name="activeInstance">
 					{(field) => (
-						<div className="flex flex-col gap-2">
-							<div className="text-xs font-medium uppercase tracking-wide text-tertiary-foreground">
-								Active instance
-							</div>
-							<Select
-								value={field.state.value}
-								onValueChange={(value) =>
-									field.handleChange(value as RedisV2InstanceName)
-								}
-								items={REDIS_V2_INSTANCE_OPTIONS.map((option) => ({
-									value: option.value,
-									label: option.label,
-								}))}
-							>
-								<SelectTrigger>
-									<SelectValue />
-								</SelectTrigger>
-								<SelectContent>
-									<SelectGroup>
-										{REDIS_V2_INSTANCE_OPTIONS.map((option) => (
-											<SelectItem key={option.value} value={option.value}>
-												<div className="flex flex-col">
-													<span className="text-sm text-foreground">
-														{option.label}
-													</span>
-													<span className="text-xs text-tertiary-foreground">
-														{option.description}
-													</span>
-												</div>
-											</SelectItem>
-										))}
-									</SelectGroup>
-								</SelectContent>
-							</Select>
+						<RedisInstanceSelect
+							value={field.state.value}
+							options={REDIS_V2_INSTANCE_OPTIONS}
+							onChange={(value) => field.handleChange(value)}
+						>
 							<p className="text-xs text-tertiary-foreground">
 								Currently serving traffic:{" "}
 								<span className="font-mono text-foreground">
 									{config.activeInstance}
 								</span>
 							</p>
-						</div>
+						</RedisInstanceSelect>
 					)}
 				</form.Field>
 
@@ -125,33 +89,22 @@ export const RedisV2CacheForm = ({
 				</div>
 			</div>
 
-			<DialogFooter className="flex-wrap pt-2">
-				{mutation.error && (
-					<span role="alert" className="mr-auto text-xs text-destructive">
-						{getBackendErr(mutation.error, "Failed to save config")}
-					</span>
+			<form.Subscribe
+				selector={(state) => ({
+					activeInstance: state.values.activeInstance,
+					isSubmitting: state.isSubmitting,
+				})}
+			>
+				{({ activeInstance, isSubmitting }) => (
+					<RedisCacheFormFooter
+						error={mutation.error}
+						isSubmitting={isSubmitting}
+						saveDisabled={activeInstance === config.activeInstance}
+						onSave={() => form.handleSubmit()}
+						onClose={onClose}
+					/>
 				)}
-				<Button variant="secondary" onClick={onClose}>
-					Cancel
-				</Button>
-				<form.Subscribe
-					selector={(state) => ({
-						activeInstance: state.values.activeInstance,
-						isSubmitting: state.isSubmitting,
-					})}
-				>
-					{({ activeInstance, isSubmitting }) => (
-						<Button
-							variant="primary"
-							onClick={() => form.handleSubmit()}
-							isLoading={isSubmitting}
-							disabled={activeInstance === config.activeInstance}
-						>
-							Save
-						</Button>
-					)}
-				</form.Subscribe>
-			</DialogFooter>
+			</form.Subscribe>
 		</>
 	);
 };

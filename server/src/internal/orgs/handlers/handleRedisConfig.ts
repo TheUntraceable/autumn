@@ -2,11 +2,12 @@ import { ErrCode, RecaseError, Scopes } from "@autumn/shared";
 import { z } from "zod/v4";
 import { getOrgRedis, removeOrgRedis } from "@/external/redis/orgRedisPool.js";
 import { createRoute } from "@/honoMiddlewares/routeHandler.js";
-import { encryptData } from "@/utils/encryptUtils.js";
 import { OrgService } from "../OrgService.js";
 import { clearOrgCache } from "../orgUtils/clearOrgCache.js";
-
-const REDIS_PROTOCOLS = new Set(["redis:", "rediss:"]);
+import {
+	buildInitialRedisConfig,
+	withUpdatedMigrationPercent,
+} from "../orgUtils/redisConfigUtils.js";
 
 export const handleUpsertRedisConfig = createRoute({
 	scopes: [Scopes.Organisation.Write],
@@ -41,61 +42,15 @@ export const handleUpsertRedisConfig = createRoute({
 			});
 		}
 
-		let redisUrl: URL;
-		try {
-			redisUrl = new URL(connectionString);
-		} catch {
-			throw new RecaseError({
-				message: "Invalid connection string: could not parse URL",
-				code: ErrCode.InvalidRequest,
-				statusCode: 400,
-			});
-		}
-		if (!REDIS_PROTOCOLS.has(redisUrl.protocol)) {
-			throw new RecaseError({
-				message: "Invalid connection string: expected redis:// or rediss://",
-				code: ErrCode.InvalidRequest,
-				statusCode: 400,
-			});
-		}
+		const { redisConfig, redisUrl } = buildInitialRedisConfig({
+			connectionString,
+			publicConnectionString,
+		});
 
-		if (publicConnectionString) {
-			let publicRedisUrl: URL;
-			try {
-				publicRedisUrl = new URL(publicConnectionString);
-			} catch {
-				throw new RecaseError({
-					message: "Invalid public connection string: could not parse URL",
-					code: ErrCode.InvalidRequest,
-					statusCode: 400,
-				});
-			}
-			if (!REDIS_PROTOCOLS.has(publicRedisUrl.protocol)) {
-				throw new RecaseError({
-					message:
-						"Invalid public connection string: expected redis:// or rediss://",
-					code: ErrCode.InvalidRequest,
-					statusCode: 400,
-				});
-			}
-		}
-
-		const now = Date.now();
 		const updatedOrg = await OrgService.update({
 			db,
 			orgId: org.id,
-			updates: {
-				redis_config: {
-					connectionString: encryptData(connectionString),
-					publicConnectionString: publicConnectionString
-						? encryptData(publicConnectionString)
-						: undefined,
-					url: redisUrl.host,
-					migrationPercent: 0,
-					previousMigrationPercent: 0,
-					migrationChangedAt: now,
-				},
-			},
+			updates: { redis_config: redisConfig },
 		});
 
 		if (updatedOrg) {
@@ -132,12 +87,10 @@ export const handleUpdateRedisMigration = createRoute({
 			db,
 			orgId: org.id,
 			updates: {
-				redis_config: {
-					...org.redis_config,
-					previousMigrationPercent: org.redis_config.migrationPercent,
+				redis_config: withUpdatedMigrationPercent({
+					redisConfig: org.redis_config,
 					migrationPercent,
-					migrationChangedAt: Date.now(),
-				},
+				}),
 			},
 		});
 		await clearOrgCache({ db, orgId: org.id, env: ctx.env, logger });

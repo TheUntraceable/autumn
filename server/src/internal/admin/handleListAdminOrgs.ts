@@ -1,18 +1,13 @@
-import { member, organizations, user, Scopes } from "@autumn/shared";
-import {
-	and,
-	desc,
-	eq,
-	gt,
-	gte,
-	ilike,
-	inArray,
-	isNull,
-	lt,
-	or,
-} from "drizzle-orm";
+import { member, organizations, Scopes, user } from "@autumn/shared";
+import { and, desc, eq, ilike, inArray, isNull, or } from "drizzle-orm";
 import { createRoute } from "../../honoMiddlewares/routeHandler";
 import { getRequestBlockConfigFromSource } from "../misc/requestBlocks/requestBlockStore.js";
+import {
+	ADMIN_LIST_FETCH_LIMIT,
+	adminListCursorFilters,
+	parseAdminListQuery,
+	toAdminListPage,
+} from "./adminListUtils.js";
 
 export const handleListAdminOrgs = createRoute({
 	scopes: [Scopes.Superuser],
@@ -20,34 +15,7 @@ export const handleListAdminOrgs = createRoute({
 		const ctx = c.get("ctx");
 		const { db } = ctx;
 
-		const { search, after: afterQuery, before: beforeQuery } = c.req.query();
-		const trimmedSearch = search?.trim();
-		const searchTerm = trimmedSearch ? trimmedSearch : undefined;
-
-		let after:
-			| {
-					id: string;
-					createdAt: Date;
-			  }
-			| undefined;
-		let before:
-			| {
-					id: string;
-					createdAt: Date;
-			  }
-			| undefined;
-
-		if (afterQuery) {
-			after = {
-				id: afterQuery.split(",")[0],
-				createdAt: new Date(afterQuery.split(",")[1]),
-			};
-		} else if (beforeQuery) {
-			before = {
-				id: beforeQuery.split(",")[0],
-				createdAt: new Date(beforeQuery.split(",")[1]),
-			};
-		}
+		const { searchTerm, after, before } = parseAdminListQuery(c.req.query());
 
 		const orgs = await db
 			.select()
@@ -62,33 +30,18 @@ export const handleListAdminOrgs = createRoute({
 								ilike(organizations.slug, `%${searchTerm}%`),
 							)
 						: undefined,
-					after
-						? or(
-								lt(organizations.createdAt, after.createdAt),
-								or(
-									and(
-										eq(organizations.createdAt, after.createdAt),
-										lt(organizations.id, after.id),
-									),
-								),
-							)
-						: undefined,
-					before
-						? or(
-								gte(organizations.createdAt, before.createdAt),
-								or(
-									and(
-										eq(organizations.createdAt, before.createdAt),
-										gt(organizations.id, before.id),
-									),
-								),
-							)
-						: undefined,
+					...adminListCursorFilters({
+						createdAtColumn: organizations.createdAt,
+						idColumn: organizations.id,
+						after,
+						before,
+					}),
 				),
 			)
 			.orderBy(desc(organizations.createdAt), desc(organizations.id))
-			.limit(21);
+			.limit(ADMIN_LIST_FETCH_LIMIT);
 
+		const { pageRows, hasNextPage } = toAdminListPage(orgs);
 		const orgIds = orgs.map((org) => org.id);
 		let requestBlockConfig = {
 			orgs: {} as Record<
@@ -110,7 +63,7 @@ export const handleListAdminOrgs = createRoute({
 			.where(inArray(member.organizationId, orgIds));
 
 		return c.json({
-			rows: orgs.slice(0, 20).map((org) => {
+			rows: pageRows.map((org) => {
 				const { redis_config: rawRedisConfig, ...rest } = org;
 				return {
 					...rest,
@@ -132,7 +85,7 @@ export const handleListAdminOrgs = createRoute({
 					},
 				};
 			}),
-			hasNextPage: orgs.length > 20,
+			hasNextPage,
 		});
 	},
 });

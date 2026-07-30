@@ -1,11 +1,11 @@
-import type { ApiEventsListItem, TrackDeduction } from "@autumn/shared";
-import {
-	epochToDateTime,
-	tinybirdTimestampToEpochMs,
-} from "@autumn/shared/api/common/epochUtils";
+import type { ApiEventsListItem } from "@autumn/shared";
+import { epochToDateTime } from "@autumn/shared/api/common/epochUtils";
 import { getTinybirdPipes } from "@/external/tinybird/initTinybird.js";
 import type { AutumnContext } from "@/honoUtils/HonoEnv.js";
-import { validatePropertyPathForJSON } from "@/internal/analytics/actions/eventValidationUtils.js";
+import {
+	buildEventFilterParams,
+	toApiEventsListItem,
+} from "@/internal/analytics/actions/tinybirdEventUtils.js";
 
 /** Lists events for the external API with offset-based pagination */
 export const listEvents = async ({
@@ -46,17 +46,7 @@ export const listEvents = async ({
 		limit: params.limit,
 	});
 
-	// Build filter_by indexed params
-	const filterParams: Record<string, string> = {};
-	if (params.filter_by) {
-		const entries = Object.entries(params.filter_by).slice(0, 5);
-		for (let i = 0; i < entries.length; i++) {
-			const [key, value] = entries[i];
-			validatePropertyPathForJSON({ propertyKey: key });
-			filterParams[`filter_key_${i}`] = key;
-			filterParams[`filter_value_${i}`] = value;
-		}
-	}
+	const filterParams = buildEventFilterParams({ filterBy: params.filter_by });
 
 	const startTime = performance.now();
 	const result = await pipes.listEventsPaginated({
@@ -76,51 +66,7 @@ export const listEvents = async ({
 	const hasMore = result.data.length > params.limit;
 	const rows = hasMore ? result.data.slice(0, params.limit) : result.data;
 
-	// Transform to API format
-	const list: ApiEventsListItem[] = rows.map((row) => {
-		let properties = {};
-		if (row.properties) {
-			try {
-				properties = JSON.parse(row.properties);
-			} catch {
-				// Invalid JSON, use empty object
-			}
-		}
-
-		let deductions: TrackDeduction[] | null = null;
-		if (row.deductions) {
-			try {
-				const parsed = JSON.parse(row.deductions);
-				// Tinybird's JSON column re-encodes nested-object array items
-				// as strings; second parse brings them back to TrackDeduction.
-				const rawList = Array.isArray(parsed)
-					? parsed
-					: parsed && Array.isArray(parsed.list)
-						? parsed.list
-						: null;
-				if (rawList) {
-					deductions = rawList.map((item: unknown) => {
-						if (typeof item !== "string") return item as TrackDeduction;
-						try {
-							return JSON.parse(item) as TrackDeduction;
-						} catch {
-							return item as unknown as TrackDeduction;
-						}
-					});
-				}
-			} catch {}
-		}
-
-		return {
-			id: row.id,
-			timestamp: tinybirdTimestampToEpochMs(row.timestamp),
-			feature_id: row.event_name,
-			customer_id: row.customer_id,
-			value: row.value ?? 0,
-			properties,
-			deductions,
-		};
-	});
+	const list: ApiEventsListItem[] = rows.map(toApiEventsListItem);
 
 	ctx.logger.debug("Events list result", {
 		queryMs: Math.round(queryDuration),

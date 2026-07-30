@@ -8,6 +8,22 @@ import { and, countDistinct, eq, inArray, isNotNull, sql } from "drizzle-orm";
 import type { DrizzleCli } from "@/db/initDrizzle.js";
 
 const activeStatuses = [CusProductStatus.Active, CusProductStatus.PastDue];
+
+/** Distinct-customer counts shared by every customer-product count query */
+const customerCountFields = {
+	active: countDistinct(customerProducts.internal_customer_id).as("active"),
+	canceled: countDistinct(
+		sql`CASE WHEN ${isNotNull(customerProducts.canceled_at)} THEN ${customerProducts.internal_customer_id} END`,
+	).as("canceled"),
+	custom: countDistinct(
+		sql`CASE WHEN ${eq(customerProducts.is_custom, true)} THEN ${customerProducts.internal_customer_id} END`,
+	).as("custom"),
+	trialing: countDistinct(
+		sql`CASE WHEN ${isNotNull(customerProducts.trial_ends_at)} AND ${sql`${customerProducts.trial_ends_at} > (EXTRACT(EPOCH FROM NOW()) * 1000)::bigint`} THEN ${customerProducts.internal_customer_id} END`,
+	).as("trialing"),
+	all: countDistinct(customerProducts.internal_customer_id).as("all"),
+};
+
 export class CusProdReadService {
 	static async existsForProduct({
 		db,
@@ -45,19 +61,7 @@ export class CusProdReadService {
 	}) => {
 		const result = await db
 			.select({
-				active: countDistinct(customerProducts.internal_customer_id).as(
-					"active",
-				),
-				canceled: countDistinct(
-					sql`CASE WHEN ${isNotNull(customerProducts.canceled_at)} THEN ${customerProducts.internal_customer_id} END`,
-				).as("canceled"),
-				custom: countDistinct(
-					sql`CASE WHEN ${eq(customerProducts.is_custom, true)} THEN ${customerProducts.internal_customer_id} END`,
-				).as("custom"),
-				trialing: countDistinct(
-					sql`CASE WHEN ${isNotNull(customerProducts.trial_ends_at)} AND ${sql`${customerProducts.trial_ends_at} > (EXTRACT(EPOCH FROM NOW()) * 1000)::bigint`} THEN ${customerProducts.internal_customer_id} END`,
-				).as("trialing"),
-				all: countDistinct(customerProducts.internal_customer_id).as("all"),
+				...customerCountFields,
 			})
 			.from(customerProducts)
 			.where(
@@ -82,19 +86,7 @@ export class CusProdReadService {
 		const rows = await db
 			.select({
 				productId: products.id,
-				active: countDistinct(customerProducts.internal_customer_id).as(
-					"active",
-				),
-				canceled: countDistinct(
-					sql`CASE WHEN ${isNotNull(customerProducts.canceled_at)} THEN ${customerProducts.internal_customer_id} END`,
-				).as("canceled"),
-				custom: countDistinct(
-					sql`CASE WHEN ${eq(customerProducts.is_custom, true)} THEN ${customerProducts.internal_customer_id} END`,
-				).as("custom"),
-				trialing: countDistinct(
-					sql`CASE WHEN ${isNotNull(customerProducts.trial_ends_at)} AND ${sql`${customerProducts.trial_ends_at} > (EXTRACT(EPOCH FROM NOW()) * 1000)::bigint`} THEN ${customerProducts.internal_customer_id} END`,
-				).as("trialing"),
-				all: countDistinct(customerProducts.internal_customer_id).as("all"),
+				...customerCountFields,
 			})
 			.from(products)
 			.leftJoin(
@@ -142,19 +134,7 @@ export class CusProdReadService {
 	}) {
 		const rows = await db
 			.select({
-				active: countDistinct(customerProducts.internal_customer_id).as(
-					"active",
-				),
-				canceled: countDistinct(
-					sql`CASE WHEN ${isNotNull(customerProducts.canceled_at)} THEN ${customerProducts.internal_customer_id} END`,
-				).as("canceled"),
-				custom: countDistinct(
-					sql`CASE WHEN ${eq(customerProducts.is_custom, true)} THEN ${customerProducts.internal_customer_id} END`,
-				).as("custom"),
-				trialing: countDistinct(
-					sql`CASE WHEN ${isNotNull(customerProducts.trial_ends_at)} AND ${sql`${customerProducts.trial_ends_at} > (EXTRACT(EPOCH FROM NOW()) * 1000)::bigint`} THEN ${customerProducts.internal_customer_id} END`,
-				).as("trialing"),
-				all: countDistinct(customerProducts.internal_customer_id).as("all"),
+				...customerCountFields,
 			})
 			.from(products)
 			.leftJoin(
@@ -189,19 +169,7 @@ export class CusProdReadService {
 		const rows = await db
 			.select({
 				version: products.version,
-				active: countDistinct(customerProducts.internal_customer_id).as(
-					"active",
-				),
-				canceled: countDistinct(
-					sql`CASE WHEN ${isNotNull(customerProducts.canceled_at)} THEN ${customerProducts.internal_customer_id} END`,
-				).as("canceled"),
-				custom: countDistinct(
-					sql`CASE WHEN ${eq(customerProducts.is_custom, true)} THEN ${customerProducts.internal_customer_id} END`,
-				).as("custom"),
-				trialing: countDistinct(
-					sql`CASE WHEN ${isNotNull(customerProducts.trial_ends_at)} AND ${sql`${customerProducts.trial_ends_at} > (EXTRACT(EPOCH FROM NOW()) * 1000)::bigint`} THEN ${customerProducts.internal_customer_id} END`,
-				).as("trialing"),
-				all: countDistinct(customerProducts.internal_customer_id).as("all"),
+				...customerCountFields,
 			})
 			.from(products)
 			.leftJoin(

@@ -1,4 +1,4 @@
-import { FeatureType, type Reward } from "@autumn/shared";
+import type { Reward } from "@autumn/shared";
 import {
 	Dialog,
 	DialogContent,
@@ -27,11 +27,8 @@ import {
 	mapApiToFrontendReward,
 	mapFrontendToApiReward,
 } from "../../utils/rewardMappers";
-import { DiscountRewardConfig } from "./DiscountRewardConfig";
-import { FeatureGrantRewardConfig } from "./FeatureGrantRewardConfig";
-import { FreeProductRewardConfig } from "./FreeProductRewardConfig";
-import { RewardDetails } from "./RewardDetails";
-import { SelectRewardType } from "./SelectRewardType";
+import { isRewardFormValid } from "../../utils/rewardValidation";
+import { RewardSheetBody } from "./RewardSheetBody";
 
 interface UpdateRewardSheetProps {
 	open: boolean;
@@ -68,53 +65,7 @@ export function UpdateRewardSheet({
 		}
 	}, [open, selectedReward, setReward, setBaseReward]);
 
-	const isFormValid = () => {
-		if (!reward.name || !reward.id) return false;
-		if (!reward.rewardCategory) return false;
-
-		if (reward.rewardCategory === "discount") {
-			if (!reward.discountType) return false;
-			const config = reward.discount_config;
-			if (
-				!config?.apply_to_all &&
-				(!config?.price_ids || config.price_ids.length === 0)
-			) {
-				return false;
-			}
-		}
-
-		if (reward.rewardCategory === "free_product" && !reward.free_product_id) {
-			return false;
-		}
-
-		if (reward.rewardCategory === "feature_grant") {
-			if (reward.featureGrantEntitlements.length === 0) return false;
-			const featureIds = features.map((f) => f.id);
-			if (
-				reward.featureGrantEntitlements.some(
-					(e) => !e.feature_id || !featureIds.includes(e.feature_id),
-				)
-			)
-				return false;
-			if (
-				reward.featureGrantEntitlements.some((e) => {
-					// Boolean features grant on/off access with no allowance
-					const isBoolean =
-						features.find((f) => f.id === e.feature_id)?.type ===
-						FeatureType.Boolean;
-					return !isBoolean && (!e.allowance || e.allowance <= 0);
-				})
-			)
-				return false;
-			if (
-				!reward.promo_codes?.length ||
-				!reward.promo_codes.some((pc) => pc.code)
-			)
-				return false;
-		}
-
-		return true;
-	};
+	const formValid = isRewardFormValid({ reward, features });
 
 	const performUpdate = async () => {
 		if (!selectedReward) return;
@@ -146,7 +97,7 @@ export function UpdateRewardSheet({
 	};
 
 	const handleUpdate = async () => {
-		if (!selectedReward || !isFormValid()) return;
+		if (!selectedReward || !formValid) return;
 
 		// Stripe can't update coupons in place, so discount updates delete & recreate.
 		if (reward.rewardCategory === "discount") {
@@ -170,22 +121,7 @@ export function UpdateRewardSheet({
 						description="Modify your discount or free plan reward"
 					/>
 
-					<div className="flex-1 overflow-y-auto">
-						<RewardDetails reward={reward} setReward={setReward} />
-						<SelectRewardType reward={reward} setReward={setReward} />
-
-						{reward.rewardCategory === "discount" && (
-							<DiscountRewardConfig reward={reward} setReward={setReward} />
-						)}
-
-						{reward.rewardCategory === "free_product" && (
-							<FreeProductRewardConfig reward={reward} setReward={setReward} />
-						)}
-
-						{reward.rewardCategory === "feature_grant" && (
-							<FeatureGrantRewardConfig reward={reward} setReward={setReward} />
-						)}
-					</div>
+					<RewardSheetBody reward={reward} setReward={setReward} />
 
 					<SheetFooter>
 						<ShortcutButton
@@ -201,7 +137,7 @@ export function UpdateRewardSheet({
 							onClick={handleUpdate}
 							metaShortcut="enter"
 							isLoading={loading}
-							disabled={!isFormValid()}
+							disabled={!formValid}
 						>
 							Update reward
 						</ShortcutButton>

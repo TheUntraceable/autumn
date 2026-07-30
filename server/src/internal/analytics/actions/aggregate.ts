@@ -24,27 +24,9 @@ import {
 } from "@/external/tinybird/initTinybird.js";
 import type { AutumnContext } from "@/honoUtils/HonoEnv.js";
 import { validatePropertyPathForJSON } from "@/internal/analytics/actions/eventValidationUtils.js";
+import { buildEventFilterParams } from "@/internal/analytics/actions/tinybirdEventUtils.js";
 import { getBillingCycleStartDate } from "../analyticsUtils.js";
 import { getCountAndSum } from "./getCountAndSum.js";
-
-/** Flattens filter_by into indexed filter_key_N / filter_value_N params for Tinybird pipes */
-const buildFilterParams = ({
-	filter_by,
-}: {
-	filter_by?: Record<string, string>;
-}): Record<string, string> => {
-	const params: Record<string, string> = {};
-	if (!filter_by) return params;
-
-	const entries = Object.entries(filter_by).slice(0, 5);
-	for (let i = 0; i < entries.length; i++) {
-		const [key, value] = entries[i];
-		validatePropertyPathForJSON({ propertyKey: key });
-		params[`filter_key_${i}`] = key;
-		params[`filter_value_${i}`] = value;
-	}
-	return params;
-};
 
 const DATE_FORMAT = "yyyy-MM-dd HH:mm:ss";
 
@@ -414,8 +396,7 @@ const formatGroupableResults = ({
  */
 const totalsHaveEvents = (
 	totals: Record<string, { count: number; sum: number }>,
-): boolean =>
-	Object.values(totals).some((t) => t.count > 0 && t.sum > 0);
+): boolean => Object.values(totals).some((t) => t.count > 0 && t.sum > 0);
 
 /** Aggregates events into time-bucketed timeseries data */
 export const aggregate = async ({
@@ -469,7 +450,9 @@ export const aggregate = async ({
 			validatePropertyPathForJSON({ propertyKey });
 		}
 
-		const filterParams = buildFilterParams({ filter_by: params.filter_by });
+		const filterParams = buildEventFilterParams({
+			filterBy: params.filter_by,
+		});
 
 		const pipeParams = {
 			org_id: org.id,
@@ -537,7 +520,7 @@ export const aggregate = async ({
 			timezone,
 			customer_id: params.aggregateAll ? undefined : params.customer_id,
 			entity_id: params.entity_id,
-			...buildFilterParams({ filter_by: params.filter_by }),
+			...buildEventFilterParams({ filterBy: params.filter_by }),
 		};
 
 		const result = await pipes.aggregateSimple(pipeParams);

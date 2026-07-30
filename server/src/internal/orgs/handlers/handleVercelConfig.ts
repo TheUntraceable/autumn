@@ -10,6 +10,7 @@ import {
 import { createSvixApp } from "@server/external/svix/svixHelpers.js";
 import { createSvixCli } from "@server/external/svix/svixUtils.js";
 import { createRoute } from "@server/honoMiddlewares/routeHandler.js";
+import { mask } from "@server/utils/genUtils.js";
 import type { ApplicationOut } from "svix";
 import { OrgService } from "../OrgService.js";
 
@@ -20,14 +21,6 @@ export const getVercelConfigDisplay = ({
 	org: Organization;
 	env: AppEnv;
 }) => {
-	const mask = (v: string | undefined, prefix: number, suffix: number) => {
-		if (!v) return undefined;
-		const len = v.length;
-		if (len <= prefix + suffix) return v;
-		const maskLen = len - prefix - suffix;
-		return v.slice(0, prefix) + "*".repeat(maskLen) + v.slice(-suffix);
-	};
-
 	const vercelConfig = org.processor_configs?.vercel;
 	if (!vercelConfig) {
 		return {

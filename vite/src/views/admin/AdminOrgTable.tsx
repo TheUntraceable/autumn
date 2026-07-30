@@ -1,66 +1,29 @@
-import { Button, Input } from "@autumn/ui";
-import { useQuery } from "@tanstack/react-query";
+import { Input } from "@autumn/ui";
 import { useMemo, useState } from "react";
 import { Table } from "@/components/general/table";
-import { useAxiosInstance } from "@/services/useAxiosInstance";
 import { type AdminOrg, createAdminOrgColumns } from "./AdminOrgColumns";
+import { AdminTablePagination } from "./components/AdminTablePagination";
 import { OrgRedisConfigDialog } from "./components/OrgRedisConfigDialog";
 import { RequestBlockDialog } from "./components/RequestBlockDialog";
+import { useAdminCursorList } from "./hooks/useAdminCursorList";
 import { useAdminTable } from "./hooks/useAdminTable";
 
 export const AdminOrgTable = () => {
-	const axiosInstance = useAxiosInstance();
-	const [search, setSearch] = useState("");
-	const [after, setAfter] = useState<string | undefined>(undefined);
-	const [before, setBefore] = useState<string | undefined>(undefined);
-	const [page, setPage] = useState(1);
 	const [selectedOrg, setSelectedOrg] = useState<AdminOrg | null>(null);
 	const [redisOrg, setRedisOrg] = useState<AdminOrg | null>(null);
 
-	const params = new URLSearchParams();
-	if (search) params.append("search", search);
-	if (after) params.append("after", after);
-	if (before) params.append("before", before);
-	const url = `/admin/orgs${params.toString() ? `?${params.toString()}` : ""}`;
-
-	const { data, isLoading, refetch } = useQuery({
-		queryKey: ["admin-orgs", search, after, before],
-		queryFn: async () => {
-			const { data } = await axiosInstance.get(url);
-			return data;
-		},
+	const {
+		rows,
+		search,
+		isLoading,
+		refetch,
+		pageInfo,
+		handleSearch,
+		handlePaginate,
+	} = useAdminCursorList<AdminOrg>({
+		queryKey: "admin-orgs",
+		path: "/admin/orgs",
 	});
-
-	const rows: AdminOrg[] = useMemo(() => data?.rows || [], [data?.rows]);
-
-	const lastRow = rows[rows.length - 1];
-	const firstRow = rows[0];
-
-	const pageInfo = {
-		hasNextPage: data?.hasNextPage || false,
-		hasPrevPage: rows.length !== 0 && page > 1,
-		lastItem: lastRow ? `${lastRow.id},${lastRow.createdAt}` : undefined,
-		firstItem: firstRow ? `${firstRow.id},${firstRow.createdAt}` : undefined,
-		page,
-	};
-
-	const handleSearch = (value: string) => {
-		setSearch(value);
-		setAfter(undefined);
-		setBefore(undefined);
-		setPage(1);
-	};
-
-	const handlePaginate = (direction: "next" | "prev") => {
-		if (direction === "next") {
-			setAfter(pageInfo.lastItem);
-			setBefore(undefined);
-		} else {
-			setBefore(pageInfo.firstItem);
-			setAfter(undefined);
-		}
-		setPage((p) => (direction === "next" ? p + 1 : Math.max(1, p - 1)));
-	};
 
 	const columns = useMemo(
 		() =>
@@ -138,27 +101,7 @@ export const AdminOrgTable = () => {
 				</Table.Container>
 			</Table.Provider>
 
-			<div className="flex items-center justify-end space-x-2">
-				<Button
-					variant="secondary"
-					size="sm"
-					onClick={() => handlePaginate("prev")}
-					disabled={!pageInfo.hasPrevPage}
-				>
-					Previous
-				</Button>
-				<span className="text-sm text-tertiary-foreground">
-					Page {pageInfo.page}
-				</span>
-				<Button
-					variant="secondary"
-					size="sm"
-					onClick={() => handlePaginate("next")}
-					disabled={!pageInfo.hasNextPage}
-				>
-					Next
-				</Button>
-			</div>
+			<AdminTablePagination pageInfo={pageInfo} onPaginate={handlePaginate} />
 		</div>
 	);
 };
