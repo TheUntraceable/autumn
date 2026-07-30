@@ -1,3 +1,4 @@
+import { timingSafeEqual } from "node:crypto";
 import type {
 	Webhook,
 	WebhookBillingIssue,
@@ -25,6 +26,12 @@ import { handleUncancellation } from "./webhookHandlers/handleRevenuecatUncancel
 import type { RevenueCatWebhookHonoEnv } from "./webhookMiddlewares/revenuecatWebhookContext";
 import { revenuecatWebhookRefreshMiddleware } from "./webhookMiddlewares/revenuecatWebhookRefreshMiddleware";
 
+const secretsMatch = (provided: string, expected: string) => {
+	const a = Buffer.from(provided);
+	const b = Buffer.from(expected);
+	return a.length === b.length && timingSafeEqual(a, b);
+};
+
 export const revenuecatWebhookRouter = new Hono<RevenueCatWebhookHonoEnv>();
 
 revenuecatWebhookRouter.post(
@@ -44,7 +51,11 @@ revenuecatWebhookRouter.post(
 
 			// Missing secret must fail closed — otherwise an unauthenticated
 			// request (no header) matches an unconfigured secret (both undefined).
-			if (!webhookSecret || Authorization !== webhookSecret) {
+			if (
+				!webhookSecret ||
+				!Authorization ||
+				!secretsMatch(Authorization, webhookSecret)
+			) {
 				logger.error("Invalid authorization for RevenueCat webhook", {
 					secretConfigured: Boolean(webhookSecret),
 					authorizationProvided: Boolean(Authorization),

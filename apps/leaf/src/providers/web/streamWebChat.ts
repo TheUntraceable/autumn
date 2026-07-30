@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import type { ChatProvider } from "@autumn/shared";
+import { type ChatProvider, isAllowedOrigin } from "@autumn/shared";
 import {
 	createUIMessageStream,
 	createUIMessageStreamResponse,
@@ -78,9 +78,10 @@ const parseRequest = (body: { id?: string; messages?: UIMessage[] }) => {
 };
 
 const withCors = (response: Response, origin?: string) => {
-	if (!origin) return response;
+	const allowedOrigin = origin ? isAllowedOrigin(origin) : undefined;
+	if (!allowedOrigin) return response;
 	const headers = new Headers(response.headers);
-	headers.set("Access-Control-Allow-Origin", origin);
+	headers.set("Access-Control-Allow-Origin", allowedOrigin);
 	headers.set("Access-Control-Allow-Credentials", "true");
 	headers.set("Vary", "Origin");
 	return new Response(response.body, {

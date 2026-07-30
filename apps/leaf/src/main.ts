@@ -1,5 +1,5 @@
 import { verifyDashboardSession } from "@autumn/auth";
-import type { ChatProvider } from "@autumn/shared";
+import { type ChatProvider, isAllowedOrigin } from "@autumn/shared";
 import type { HttpBindings } from "@hono/node-server";
 import { serve } from "@hono/node-server";
 import type { UIMessage } from "ai";
@@ -53,14 +53,15 @@ const app = new Hono<{ Bindings: HttpBindings }>();
 
 app.use("*", async (c, next) => {
 	// Credentialed (cookie) requests forbid `*` for Allow-Origin/Headers — echo
-	// the request's origin + requested headers so the dashboard chat can read the
-	// streamed response.
+	// the origin, but only when it's an allowed dashboard origin, so a hostile
+	// site can't read a logged-in user's chat with their cookies.
 	const origin = c.req.header("origin");
-	if (origin) {
-		c.header("Access-Control-Allow-Origin", origin);
+	const allowedOrigin = origin ? isAllowedOrigin(origin) : undefined;
+	if (allowedOrigin) {
+		c.header("Access-Control-Allow-Origin", allowedOrigin);
 		c.header("Access-Control-Allow-Credentials", "true");
 		c.header("Vary", "Origin");
-	} else {
+	} else if (!origin) {
 		c.header("Access-Control-Allow-Origin", "*");
 	}
 	c.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
@@ -120,11 +121,12 @@ app.post("/agent/chat", async (c) => {
 	// The chat SDK returns a raw Response, so the CORS middleware's c.header()
 	// doesn't apply — add credential-safe CORS directly for the browser.
 	const origin = c.req.header("origin");
-	if (!origin) {
+	const allowedOrigin = origin ? isAllowedOrigin(origin) : undefined;
+	if (!allowedOrigin) {
 		return response;
 	}
 	const headers = new Headers(response.headers);
-	headers.set("Access-Control-Allow-Origin", origin);
+	headers.set("Access-Control-Allow-Origin", allowedOrigin);
 	headers.set("Access-Control-Allow-Credentials", "true");
 	headers.set("Vary", "Origin");
 	return new Response(response.body, {

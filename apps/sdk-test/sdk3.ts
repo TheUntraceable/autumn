@@ -1,5 +1,9 @@
-const API_KEY = "am_sk_live_Z2syCRIHHqSI1yz5hiTPj0PjUBDxCQ0KKICgNi20Mb";
-const BASE_URL = "https://api.useautumn.com";
+const API_KEY = process.env.AUTUMN_SECRET_KEY;
+const BASE_URL = process.env.AUTUMN_BASE_URL ?? "http://localhost:8080";
+
+if (!API_KEY) {
+  throw new Error("AUTUMN_SECRET_KEY is required");
+}
 
 const PAGE_SIZE = 1000;
 
