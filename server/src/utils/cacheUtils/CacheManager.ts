@@ -14,7 +14,17 @@ export class CacheManager {
 			return null;
 		}
 
-		return JSON.parse(res);
+		try {
+			return JSON.parse(res);
+		} catch (error) {
+			// A poisoned/corrupted cache entry would otherwise throw on every
+			// read until its TTL expires, breaking callers that treat a cache
+			// miss as recoverable. Drop the bad entry and report a miss so the
+			// value gets recomputed and rewritten.
+			console.warn(`Failed to parse cached JSON for key "${key}"`, error);
+			redis.del(key).catch(() => {});
+			return null;
+		}
 	}
 
 	public static async setJson(

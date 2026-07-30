@@ -125,7 +125,15 @@ const getStripeMeter = async ({
 			);
 			return stripeMeter;
 		}
-	} catch (_error) {}
+	} catch (error) {
+		// A failed lookup can't distinguish "no meter exists" from a transient
+		// Stripe error, so we fall through to create one. Log it so the risk of
+		// creating a duplicate meter is observable rather than silent.
+		logger.warn?.(
+			`Failed to search Stripe meters for ${product.name} - ${feature!.name}; falling back to creating a new meter`,
+			error,
+		);
+	}
 
 	const meter = await stripeCli.billing.meters.create({
 		display_name: `${product.name} - ${feature!.name}`,

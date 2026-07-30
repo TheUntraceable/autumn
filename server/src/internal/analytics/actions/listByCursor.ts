@@ -122,7 +122,12 @@ export const listByCursor = async ({
 						}
 					});
 				}
-			} catch {}
+			} catch (error) {
+				ctx.logger.warn("Failed to parse event deductions; dropping", {
+					eventId: row.id,
+					error,
+				});
+			}
 		}
 
 		lastRowMicros = tinybirdTimestampToEpochMicros(row.timestamp);
