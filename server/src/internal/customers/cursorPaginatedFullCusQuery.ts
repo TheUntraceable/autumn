@@ -9,6 +9,7 @@ import {
 } from "@autumn/shared";
 import { sql } from "drizzle-orm";
 import { planetScaleTag } from "@/db/dbUtils.js";
+import type { CustomerListSort } from "./customerListSort.js";
 import {
 	cpStatusInClause,
 	customerProductsSeedCte,
@@ -44,6 +45,7 @@ export type CursorPaginatedFullCusQueryArgs = {
 	intervalFilters?: DashboardIntervalFilter[];
 	cusProductLimit: number;
 	customerId?: string;
+	sortDirection?: CustomerListSort["direction"];
 	/** Emit products_page / products_total_count. Dashboard only. */
 	withProductsPage?: boolean;
 };
@@ -74,6 +76,7 @@ export const getCursorPaginatedFullCusQuery = ({
 	intervalFilters,
 	cusProductLimit,
 	customerId,
+	sortDirection = "desc",
 	withProductsPage = false,
 }: CursorPaginatedFullCusQueryArgs) => {
 	const cpStatusFilter = cpStatusInClause(inStatuses);
@@ -106,9 +109,18 @@ export const getCursorPaginatedFullCusQuery = ({
 		intervalFilters,
 	});
 
+	const ascending = sortDirection === "asc";
 	const cursorPredicate = cursor
-		? sql`AND (c.created_at, c.id) < (${cursor.t}, ${cursor.id})`
+		? ascending
+			? sql`AND (c.created_at, c.id) > (${cursor.t}, ${cursor.id})`
+			: sql`AND (c.created_at, c.id) < (${cursor.t}, ${cursor.id})`
 		: sql``;
+	const customerOrder = ascending
+		? sql`c.created_at ASC, c.id ASC`
+		: sql`c.created_at DESC, c.id DESC`;
+	const aggregateCustomerOrder = ascending
+		? sql`created_at ASC, id ASC`
+		: sql`created_at DESC, id DESC`;
 
 	const fetchLimit = limit + 1;
 
@@ -172,7 +184,7 @@ export const getCursorPaginatedFullCusQuery = ({
 		WHERE c.org_id = ${orgId}
 			AND c.env = ${env}
 			${customerId ? sql`AND (c.id = ${customerId} OR c.internal_id = ${customerId})` : sql`${customerListFilterSql}${cursorPredicate}`}
-		ORDER BY c.created_at DESC, c.id DESC
+		ORDER BY ${customerOrder}
 		LIMIT ${fetchLimit}
 		),
 		cp_ranked_raw AS MATERIALIZED (
@@ -287,7 +299,7 @@ export const getCursorPaginatedFullCusQuery = ({
 		${entitiesCte}
 		${invoicesCte}
 		SELECT
-			(SELECT COALESCE(json_agg(row_json), '[]'::json) FROM cr) AS customers,
+			(SELECT COALESCE(json_agg(row_json ORDER BY ${aggregateCustomerOrder}), '[]'::json) FROM cr) AS customers,
 			(SELECT COALESCE(json_object_agg(internal_customer_id, n), '{}'::json) FROM cp_counts) AS product_counts
 			${productsSeedSelect},
 			(SELECT COALESCE(json_agg(row_json), '[]'::json) FROM cps_ranked) AS customer_products,

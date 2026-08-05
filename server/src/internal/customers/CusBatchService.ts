@@ -21,7 +21,16 @@ import {
 import { triggerBatchResetCustomerEntitlements } from "./actions/resetCustomerEntitlements/triggerBatchResetCustomerEntitlements.js";
 import { CusSearchService } from "./CusSearchService.js";
 import { getCursorPaginatedFullCusQuery } from "./cursorPaginatedFullCusQuery.js";
-import type { CustomerListFilters } from "./customerListFilters.js";
+import {
+	type CustomerListFilters,
+	customerListSelectionRequiresResolution,
+	resolvePublicCustomerListSelection,
+} from "./customerListFilters.js";
+import {
+	DEFAULT_CUSTOMER_LIST_SORT,
+	orderCustomersByInternalIds,
+	resolveCustomerListSort,
+} from "./customerListSort.js";
 import { getApiCustomerBase } from "./cusUtils/apiCusUtils/getApiCustomerBase.js";
 import {
 	getPaginatedFullCusQuery,
@@ -196,10 +205,33 @@ export class CusBatchService {
 		query: ListCustomersV2_3Params;
 	}): Promise<{ list: ApiCustomerV5[]; next_cursor: string | null }> {
 		const { limit, plans, subscription_status, search, processors } = query;
-
 		const cursor: StandardCursorFields | null = StandardCursor.decode(
 			query.start_cursor,
 		);
+		const sort = resolveCustomerListSort(query.sort);
+		const selection = resolvePublicCustomerListSelection(query);
+		const requiresResolution =
+			customerListSelectionRequiresResolution(selection);
+
+		let internalIds: string[] | undefined;
+		let resolvedHasMore = false;
+		if (requiresResolution) {
+			const resolved = await CusSearchService.resolveInternalIdsByCursor({
+				db: ctx.db,
+				orgId: ctx.org.id,
+				env: ctx.env,
+				search: search ?? "",
+				selection,
+				cursor,
+				sort,
+				limit,
+			});
+			internalIds = resolved.internalIds;
+			resolvedHasMore = resolved.hasMore;
+			if (internalIds.length === 0) {
+				return { list: [], next_cursor: null };
+			}
+		}
 
 		const cusProductLimit = getOrgCusProductLimit({
 			orgId: ctx.org.id,
@@ -213,12 +245,14 @@ export class CusBatchService {
 				? [subscription_status as unknown as CusProductStatus]
 				: RELEVANT_STATUSES,
 			withSubs: true,
-			limit,
-			cursor: cursor ?? undefined,
-			search,
-			plans,
-			processors,
+			limit: internalIds?.length ?? limit,
+			cursor: internalIds ? undefined : (cursor ?? undefined),
+			internalCustomerIds: internalIds,
+			search: internalIds ? undefined : search,
+			plans: internalIds ? undefined : plans,
+			processors: internalIds ? undefined : processors,
 			cusProductLimit,
+			sortDirection: sort.direction,
 		});
 
 		const tSqlStart = performance.now();
@@ -240,8 +274,12 @@ export class CusBatchService {
 
 		const allCustomers = reassembleFlattenedCustomer(flat);
 		const tReassembleEnd = performance.now();
-		const hasMore = allCustomers.length > limit;
-		const fullCustomers = hasMore ? allCustomers.slice(0, limit) : allCustomers;
+		const hasMore = internalIds ? resolvedHasMore : allCustomers.length > limit;
+		const fullCustomers = internalIds
+			? orderCustomersByInternalIds({ customers: allCustomers, internalIds })
+			: hasMore
+				? allCustomers.slice(0, limit)
+				: allCustomers;
 
 		const finals: ApiCustomerV5[] = [];
 
@@ -344,7 +382,7 @@ export class CusBatchService {
 
 		const tResolveStart = performance.now();
 		let internalIds: string[] | undefined;
-		let resolvedPeek: { t: number; id: string } | null = null;
+		let resolvedHasMore = false;
 		if (requiresResolveStep) {
 			const resolved = await CusSearchService.resolveInternalIdsByCursor({
 				db: ctx.db,
@@ -353,10 +391,11 @@ export class CusBatchService {
 				search,
 				filters,
 				cursor,
+				sort: DEFAULT_CUSTOMER_LIST_SORT,
 				limit,
 			});
 			internalIds = resolved.internalIds;
-			resolvedPeek = resolved.peek;
+			resolvedHasMore = resolved.hasMore;
 			if (internalIds.length === 0) {
 				ctx.logger.info(
 					`[CusBatchService.getDashboardCursorPage] limit=${limit} cursor=${cursor ? "yes" : "no"} rows=0 resolve=${(performance.now() - tResolveStart).toFixed(0)}ms sql=0ms reassemble=0ms total=${(performance.now() - tResolveStart).toFixed(0)}ms`,
@@ -418,7 +457,7 @@ export class CusBatchService {
 		let hasMore: boolean;
 		if (requiresResolveStep) {
 			fullCustomers = allCustomers;
-			hasMore = resolvedPeek !== null;
+			hasMore = resolvedHasMore;
 		} else {
 			hasMore = allCustomers.length > limit;
 			fullCustomers = hasMore ? allCustomers.slice(0, limit) : allCustomers;

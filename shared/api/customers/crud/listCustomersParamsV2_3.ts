@@ -1,9 +1,36 @@
 import { z } from "zod/v4";
+import { BillingInterval } from "../../../models/productModels/intervals/billingInterval.js";
 import {
-	createCursorLimitSchema,
 	CursorRequestFieldSchema,
+	createCursorLimitSchema,
 	PaginationDefaults,
 } from "../../common/cursorPaginationSchemas.js";
+
+export const ListCustomersStatusSchema = z.enum([
+	"active",
+	"past_due",
+	"scheduled",
+	"canceled",
+	"free_trial",
+	"expired",
+]);
+
+export const ListCustomersBillingIntervalSchema = z.enum([
+	BillingInterval.Week,
+	BillingInterval.Month,
+	BillingInterval.Quarter,
+	BillingInterval.SemiAnnual,
+	BillingInterval.Year,
+]);
+
+export const ListCustomersSortFieldSchema = z.literal("created_at");
+
+export const ListCustomersSortDirectionSchema = z.enum(["asc", "desc"]);
+
+export const ListCustomersSortSchema = z.object({
+	field: ListCustomersSortFieldSchema.default("created_at"),
+	direction: ListCustomersSortDirectionSchema.default("desc"),
+});
 
 export const ListCustomersV2_3ParamsSchema = z.object({
 	start_cursor: CursorRequestFieldSchema,
@@ -16,6 +43,7 @@ export const ListCustomersV2_3ParamsSchema = z.object({
 			z.object({
 				id: z.string(),
 				versions: z.number().array().optional(),
+				custom: z.boolean().optional(),
 			}),
 		)
 		.optional()
@@ -40,6 +68,29 @@ export const ListCustomersV2_3ParamsSchema = z.object({
 			description:
 				"Filter by customer processor type (stripe, revenuecat, vercel).",
 		}),
+
+	statuses: z.array(ListCustomersStatusSchema).optional().meta({
+		description:
+			"Filter customers by subscription status. Multiple statuses are matched with OR semantics.",
+	}),
+
+	without_plan: z.boolean().optional().meta({
+		description:
+			"Return customers without an active, past due, or scheduled plan.",
+	}),
+
+	billing_intervals: z
+		.array(ListCustomersBillingIntervalSchema)
+		.optional()
+		.meta({
+			description:
+				"Filter customers by the billing interval of an attached plan.",
+		}),
+
+	sort: ListCustomersSortSchema.optional().meta({
+		description:
+			"Sort customers by a customer field. Defaults to created_at descending.",
+	}),
 });
 
 export type ListCustomersV2_3Params = z.infer<

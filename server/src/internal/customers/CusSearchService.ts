@@ -1,10 +1,11 @@
 import {
 	type AppEnv,
 	CusProductStatus,
-	RELEVANT_STATUSES,
 	customerProducts,
 	customers,
 	products,
+	RELEVANT_STATUSES,
+	type StandardCursorFields,
 } from "@autumn/shared";
 
 import {
@@ -21,22 +22,33 @@ import {
 	or,
 	sql,
 } from "drizzle-orm";
-import { alias } from "drizzle-orm/pg-core";
+import { alias, QueryBuilder } from "drizzle-orm/pg-core";
 import { planetScaleTag } from "@/db/dbUtils.js";
 import type { DrizzleCli } from "@/db/initDrizzle.js";
 import { getOrgCusProductLimit } from "../misc/edgeConfig/orgLimitsStore.js";
-import type { CustomerListFilters } from "./customerListFilters.js";
 import {
-	type DashboardIntervalFilter,
-	type DashboardProductVersionFilter,
+	type CustomerListFilters,
+	type CustomerListIntervalFilter,
+	type CustomerListProductFilter,
+	type CustomerListSelection,
+	isAnyVersionCustomerListProductFilter,
+	resolveDashboardCustomerListSelection,
+} from "./customerListFilters.js";
+import {
+	type CustomerListSort,
+	DEFAULT_CUSTOMER_LIST_SORT,
+	getCustomerListCursorPredicate,
+	getCustomerListOrderBy,
+} from "./customerListSort.js";
+import {
 	isCustomDashboardProductFilter,
 	isVersionDashboardProductFilter,
-	parseDashboardIntervalFilter,
 	parseDashboardVersionFilter,
 } from "./getFullCusQuery.js";
 
 // Create alias for subquery
 const customerProductsAlias = alias(customerProducts, "cp_alias");
+const queryBuilder = new QueryBuilder();
 
 const customerFields = {
 	internal_id: customers.internal_id,
@@ -64,44 +76,39 @@ const productFields = {
 	is_add_on: products.is_add_on,
 };
 
-const dashboardProductFilterToDrizzleSql = ({
+const customerListProductFilterToDrizzleSql = ({
 	filter,
 	orgId,
 	env,
 }: {
-	filter: DashboardProductVersionFilter;
+	filter: CustomerListProductFilter;
 	orgId: string;
 	env: AppEnv;
 }) =>
 	and(
-		isCustomDashboardProductFilter(filter)
+		isAnyVersionCustomerListProductFilter(filter)
 			? and(
-					eq(customerProducts.product_id, filter.productId),
-					eq(customerProducts.is_custom, true),
-				)
-			: and(
 					eq(products.org_id, orgId),
 					eq(products.env, env),
 					eq(products.id, filter.productId),
-					eq(products.version, filter.version),
-				),
+				)
+			: isCustomDashboardProductFilter(filter)
+				? and(
+						eq(customerProducts.product_id, filter.productId),
+						eq(customerProducts.is_custom, true),
+					)
+				: and(
+						eq(products.org_id, orgId),
+						eq(products.env, env),
+						eq(products.id, filter.productId),
+						isVersionDashboardProductFilter(filter)
+							? eq(products.version, filter.version)
+							: undefined,
+					),
 	);
 
-const dashboardProductFilterToRawSql = ({
-	filter,
-	orgId,
-	env,
-}: {
-	filter: DashboardProductVersionFilter;
-	orgId: string;
-	env: AppEnv;
-}) =>
-	isCustomDashboardProductFilter(filter)
-		? sql`(${customerProducts.product_id} = ${filter.productId} AND ${customerProducts.is_custom} = true)`
-		: sql`(${products.org_id} = ${orgId} AND ${products.env} = ${env} AND ${products.id} = ${filter.productId} AND ${products.version} = ${filter.version})`;
-
 const dashboardIntervalFilterToRawSql = (
-	intervals: DashboardIntervalFilter[],
+	intervals: CustomerListIntervalFilter[],
 ) =>
 	sql`EXISTS (
 		SELECT 1
@@ -215,7 +222,7 @@ export class CusSearchService {
 			productVersionFilters.length > 0
 				? or(
 						...productVersionFilters.map((filter) =>
-							dashboardProductFilterToDrizzleSql({ filter, orgId, env }),
+							customerListProductFilterToDrizzleSql({ filter, orgId, env }),
 						),
 					)
 				: undefined,
@@ -841,7 +848,9 @@ export class CusSearchService {
 		env,
 		search,
 		filters,
+		selection,
 		cursor,
+		sort,
 		limit,
 	}: {
 		db: DrizzleCli;
@@ -849,58 +858,74 @@ export class CusSearchService {
 		env: AppEnv;
 		search: string;
 		filters?: SearchFilters;
-		cursor?: { t: number; id: string } | null;
+		selection?: CustomerListSelection;
+		cursor?: Pick<StandardCursorFields, "t" | "id"> | null;
+		sort?: CustomerListSort;
 		limit: number;
 	}): Promise<{
 		internalIds: string[];
-		peek: { t: number; id: string } | null;
+		hasMore: boolean;
 	}> {
-		const predicates = buildSearchPredicates({ orgId, env, search, filters });
+		const predicates = buildSearchPredicates({
+			orgId,
+			env,
+			search,
+			filters,
+			selection,
+		});
 		const fetchLimit = limit + 1;
-		const cursorClause = cursor
-			? sql`AND (${customers.created_at}, ${customers.id}) < (${cursor.t}, ${cursor.id})`
-			: sql``;
+		const resolvedSort = sort ?? DEFAULT_CUSTOMER_LIST_SORT;
+		const cursorPredicate = getCustomerListCursorPredicate({
+			sort: resolvedSort,
+			cursor: cursor ?? null,
+		});
+		const orderBy = getCustomerListOrderBy({ sort: resolvedSort });
+		const fields = {
+			internal_id: customers.internal_id,
+			created_at: customers.created_at,
+			id: customers.id,
+		};
 
 		if (predicates.kind === "productMode") {
-			const rows = (await db.execute(sql`
-				SELECT DISTINCT ${customers.internal_id} AS internal_id,
-				                ${customers.created_at} AS created_at,
-				                ${customers.id} AS id
-				FROM ${customerProducts}
-				${
-					predicates.useInnerJoin
-						? sql`INNER JOIN ${products} ON ${customerProducts.internal_product_id} = ${products.internal_id}`
-						: sql`LEFT JOIN ${products} ON ${customerProducts.internal_product_id} = ${products.internal_id}`
-				}
-				LEFT JOIN ${customers} ON ${customerProducts.internal_customer_id} = ${customers.internal_id}
-				WHERE ${predicates.whereRaw}
-				${cursorClause}
-				ORDER BY ${customers.created_at} DESC, ${customers.id} DESC
-				LIMIT ${fetchLimit}
-				${planetScaleTag({ query: "searchCustomersByProductMode" })}
-			`)) as unknown as Array<{
-				internal_id: string;
-				created_at: number;
-				id: string;
-			}>;
+			const baseQuery = queryBuilder
+				.selectDistinct(fields)
+				.from(customerProducts)
+				.innerJoin(
+					customers,
+					eq(customerProducts.internal_customer_id, customers.internal_id),
+				);
+			const query = predicates.useInnerJoin
+				? baseQuery
+						.innerJoin(
+							products,
+							eq(customerProducts.internal_product_id, products.internal_id),
+						)
+						.where(and(predicates.where, cursorPredicate))
+						.orderBy(...orderBy)
+						.limit(fetchLimit)
+				: baseQuery
+						.leftJoin(
+							products,
+							eq(customerProducts.internal_product_id, products.internal_id),
+						)
+						.where(and(predicates.where, cursorPredicate))
+						.orderBy(...orderBy)
+						.limit(fetchLimit);
+			const rows = (await db.execute(
+				sql`${query.getSQL()} ${planetScaleTag({ query: "searchCustomersByProductMode" })}`,
+			)) as unknown as Array<{ internal_id: string }>;
 			return splitWithPeek(rows, limit);
 		}
 
-		const rows = (await db.execute(sql`
-			SELECT ${customers.internal_id} AS internal_id,
-			       ${customers.created_at} AS created_at,
-			       ${customers.id} AS id
-			FROM ${customers}
-			WHERE ${predicates.whereRaw}
-			${cursorClause}
-			ORDER BY ${customers.created_at} DESC, ${customers.id} DESC
-			LIMIT ${fetchLimit}
-			${planetScaleTag({ query: "searchCustomersByProduct" })}
-		`)) as unknown as Array<{
-			internal_id: string;
-			created_at: number;
-			id: string;
-		}>;
+		const query = queryBuilder
+			.select(fields)
+			.from(customers)
+			.where(and(predicates.where, cursorPredicate))
+			.orderBy(...orderBy)
+			.limit(fetchLimit);
+		const rows = (await db.execute(
+			sql`${query.getSQL()} ${planetScaleTag({ query: "searchCustomersByProduct" })}`,
+		)) as unknown as Array<{ internal_id: string }>;
 		return splitWithPeek(rows, limit);
 	}
 }
@@ -909,18 +934,15 @@ type Predicates =
 	| {
 			kind: "noneMode";
 			where: ReturnType<typeof and>;
-			whereRaw: ReturnType<typeof sql>;
 	  }
 	| {
 			kind: "productMode";
 			where: ReturnType<typeof and>;
-			whereRaw: ReturnType<typeof sql>;
 			useInnerJoin: boolean;
 	  }
 	| {
 			kind: "default";
 			where: ReturnType<typeof and>;
-			whereRaw: ReturnType<typeof sql>;
 	  };
 
 const buildSearchPredicates = ({
@@ -928,12 +950,16 @@ const buildSearchPredicates = ({
 	env,
 	search,
 	filters,
+	selection,
 }: {
 	orgId: string;
 	env: AppEnv;
 	search: string;
 	filters?: SearchFilters;
+	selection?: CustomerListSelection;
 }): Predicates => {
+	const resolvedSelection =
+		selection ?? resolveDashboardCustomerListSelection(filters);
 	const cusBaseClauses = [
 		eq(customers.org_id, orgId),
 		eq(customers.env, env),
@@ -944,43 +970,16 @@ const buildSearchPredicates = ({
 					ilike(customers.email, `%${search}%`),
 				)
 			: undefined,
-		filters?.processor?.length
+		resolvedSelection.processors.length
 			? or(
-					...filters.processor
+					...resolvedSelection.processors
 						.map((proc) => CusSearchService.getProcessorFilterSql({})({ proc }))
 						.filter((c): c is NonNullable<typeof c> => c !== undefined),
 				)
 			: undefined,
 	];
 
-	const baseRaw = sql.join(
-		[
-			sql`${customers.org_id} = ${orgId}`,
-			sql`${customers.env} = ${env}`,
-			search
-				? sql`(${customers.id} ILIKE ${`%${search}%`} OR ${customers.name} ILIKE ${`%${search}%`} OR ${customers.email} ILIKE ${`%${search}%`})`
-				: null,
-			filters?.processor?.length
-				? sql`(${sql.join(
-						filters.processor
-							.map((proc) => {
-								if (proc === "stripe")
-									return sql`(${customers.processor}->>'id' IS NOT NULL)`;
-								if (proc === "revenuecat")
-									return sql`EXISTS (SELECT 1 FROM customer_products cp_p WHERE cp_p.internal_customer_id = ${customers.internal_id} AND cp_p.processor->>'type' = 'revenuecat')`;
-								if (proc === "vercel")
-									return sql`(${customers.processors}->>'vercel' IS NOT NULL)`;
-								return null;
-							})
-							.filter((c): c is NonNullable<typeof c> => c !== null),
-						sql` OR `,
-					)})`
-				: null,
-		].filter((c): c is NonNullable<typeof c> => c !== null),
-		sql` AND `,
-	);
-
-	if (filters?.none) {
+	if (resolvedSelection.withoutPlan) {
 		const noneFilter = notExists(
 			sql`SELECT 1 FROM customer_products ncp
 				WHERE ncp.internal_customer_id = ${customers.internal_id}
@@ -989,110 +988,49 @@ const buildSearchPredicates = ({
 		return {
 			kind: "noneMode",
 			where: and(...cusBaseClauses, noneFilter),
-			whereRaw: sql`${baseRaw} AND NOT EXISTS (
-				SELECT 1 FROM customer_products ncp
-				WHERE ncp.internal_customer_id = ${customers.internal_id}
-					AND ncp.status IN (${CusProductStatus.Active}, ${CusProductStatus.PastDue}, ${CusProductStatus.Scheduled})
-			)`,
 		};
 	}
 
-	const statuses =
-		filters?.status && filters.status.length > 0 && !filters.status.includes("")
-			? filters.status
-			: [];
-	const productVersionFilters = parseDashboardVersionFilter(filters?.version);
-	const hasNumberedVersion = productVersionFilters.some(
-		isVersionDashboardProductFilter,
+	const statuses = resolvedSelection.statuses;
+	const productFilters = resolvedSelection.products;
+	const requiresProductJoin = productFilters.some(
+		(filter) =>
+			isAnyVersionCustomerListProductFilter(filter) ||
+			isVersionDashboardProductFilter(filter),
 	);
-	const intervalFilters = parseDashboardIntervalFilter(filters?.interval);
+	const intervalFilters = resolvedSelection.intervals;
 
 	const hasProductLevelFilter =
 		statuses.length > 0 ||
-		productVersionFilters.length > 0 ||
+		productFilters.length > 0 ||
 		intervalFilters.length > 0;
 
 	if (!hasProductLevelFilter) {
 		return {
 			kind: "default",
 			where: and(...cusBaseClauses),
-			whereRaw: baseRaw,
 		};
 	}
 
-	const activeProdRaw = sql`(${customerProducts.status} = ${CusProductStatus.Active} OR ${customerProducts.status} = ${CusProductStatus.PastDue})`;
-
-	const statusRaw =
-		statuses.length > 0
-			? sql`(${sql.join(
-					statuses.map((status) => {
-						switch (status) {
-							case "active":
-								return sql`(${customerProducts.status} = ${CusProductStatus.Active} AND ${customerProducts.canceled_at} IS NULL)`;
-							case "past_due":
-								return sql`(${customerProducts.status} = ${CusProductStatus.PastDue} AND ${customerProducts.canceled_at} IS NULL)`;
-							case "canceled":
-								return sql`(${customerProducts.canceled_at} IS NOT NULL AND ${activeProdRaw})`;
-							case "free_trial":
-								return sql`(${customerProducts.trial_ends_at} > ${Date.now()} AND ${customerProducts.free_trial_id} IS NOT NULL AND ${customerProducts.canceled_at} IS NULL AND ${activeProdRaw})`;
-							case CusProductStatus.Expired:
-								return sql`(${customerProducts.status} = ${CusProductStatus.Expired} AND ${customerProducts.canceled_at} IS NULL AND NOT EXISTS (
-									SELECT 1 FROM customer_products cp_alias
-									WHERE cp_alias.internal_customer_id = ${customerProducts.internal_customer_id}
-									  AND cp_alias.product_id = ${customerProducts.product_id}
-									  AND (cp_alias.status = ${CusProductStatus.Active} OR cp_alias.status = ${CusProductStatus.PastDue})
-								))`;
-							default:
-								return sql`${customerProducts.status} = ${status}`;
-						}
-					}),
-					sql` OR `,
-				)})`
-			: null;
-
-	const versionRaw =
-		productVersionFilters.length > 0
-			? sql`(${sql.join(
-					productVersionFilters.map((filter) =>
-						dashboardProductFilterToRawSql({ filter, orgId, env }),
-					),
-					sql` OR `,
-				)})`
-			: null;
-
-	const intervalRaw =
-		intervalFilters.length > 0
-			? dashboardIntervalFilterToRawSql(intervalFilters)
-			: null;
-
-	const hasNonActiveStatus = statuses.some(
-		(status) => status !== "active" && status !== "",
-	);
+	const hasNonActiveStatus = statuses.some((status) => status !== "active");
 	const shouldApplyActiveFilter =
 		statuses.length === 0 ||
 		(statuses.includes("active") && !hasNonActiveStatus);
 
-	const productClauses = [
-		shouldApplyActiveFilter ? activeProdRaw : null,
-		statusRaw,
-		versionRaw,
-		intervalRaw,
-	].filter((c): c is NonNullable<typeof c> => c !== null);
-
-	const whereRaw =
-		productClauses.length > 0
-			? sql`${baseRaw} AND ${sql.join(productClauses, sql` AND `)}`
-			: baseRaw;
-
+	const defaultStatusDrizzle = or(
+		...resolvedSelection.defaultProductStatuses.map((status) =>
+			eq(customerProducts.status, status),
+		),
+	);
 	const activeDrizzle = or(
 		eq(customerProducts.status, CusProductStatus.Active),
 		eq(customerProducts.status, CusProductStatus.PastDue),
 	);
 	const filtersDrizzle = and(
-		productVersionFilters.length > 0
+		productFilters.length > 0
 			? or(
-					...productVersionFilters.map((filter) =>
-						dashboardProductFilterToDrizzleSql({ filter, orgId, env }),
+					...productFilters.map((filter) =>
+						customerListProductFilterToDrizzleSql({ filter, orgId, env }),
 					),
 				)
 			: undefined,
@@ -1146,31 +1084,29 @@ const buildSearchPredicates = ({
 
 	return {
 		kind: "productMode",
-		useInnerJoin: hasNumberedVersion,
+		useInnerJoin: requiresProductJoin,
 		where: and(
-			shouldApplyActiveFilter ? activeDrizzle : undefined,
+			shouldApplyActiveFilter ? defaultStatusDrizzle : undefined,
 			filtersDrizzle,
 			...cusBaseClauses,
 		),
-		whereRaw,
 	};
 };
 
 const splitWithPeek = (
-	rows: Array<{ internal_id: string; created_at: number; id: string }>,
+	rows: Array<{ internal_id: string }>,
 	limit: number,
-): { internalIds: string[]; peek: { t: number; id: string } | null } => {
+): { internalIds: string[]; hasMore: boolean } => {
 	if (rows.length > limit) {
 		const page = rows.slice(0, limit);
-		const peekRow = rows[limit]!;
 		return {
 			internalIds: page.map((r) => r.internal_id),
-			peek: { t: Number(peekRow.created_at), id: peekRow.id },
+			hasMore: true,
 		};
 	}
 	return {
 		internalIds: rows.map((r) => r.internal_id),
-		peek: null,
+		hasMore: false,
 	};
 };
 

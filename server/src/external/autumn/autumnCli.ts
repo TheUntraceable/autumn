@@ -37,6 +37,7 @@ import {
 	ErrCode,
 	type FinalizeLockParamsV0,
 	type LegacyVersion,
+	type ListCustomersV2_3Params,
 	type ListEntitiesParams,
 	type Migration,
 	type MigrationFilter,
@@ -450,16 +451,12 @@ export class AutumnInt {
 			return data;
 		},
 
-		listV2: async (params?: {
-			limit?: number;
-			offset?: number;
-			start_cursor?: string;
-			search?: string;
-			plans?: Array<{ id: string; versions?: number[] }>;
-			subscription_status?: string[];
-			processors?: Array<"stripe" | "revenuecat" | "vercel">;
-			keepInternalFields?: boolean;
-		}) => {
+		listV2: async (
+			params?: Partial<ListCustomersV2_3Params> & {
+				offset?: number;
+				keepInternalFields?: boolean;
+			},
+		) => {
 			const { keepInternalFields, ...listParams } = params || {};
 			const headers: Record<string, string> = {};
 			if (keepInternalFields) {
