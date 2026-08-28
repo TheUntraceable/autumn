@@ -7,6 +7,7 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router";
 import { DashboardGate } from "./app/DashboardGate";
 import { MainLayout } from "./app/layout";
 import { OnboardingLayout } from "./app/OnboardingLayout";
+import { BouncingAvatarEasterEgg } from "./components/general/BouncingAvatarEasterEgg";
 import { useSession } from "./lib/auth-client";
 import { SSO_CALLBACK_PATH } from "./lib/sso/ssoCallback";
 import { identifyUser } from "./utils/posthogTracking";
@@ -159,6 +160,7 @@ export default function App() {
 
 	return (
 		<BrowserRouter>
+			<BouncingAvatarEasterEgg />
 			<React.Suspense fallback={<LoadingScreen fullPage />}>
 				<Routes>
 					<Route path="/sign-in" element={<SignIn />} />
