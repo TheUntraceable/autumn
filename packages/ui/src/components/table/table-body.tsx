@@ -10,7 +10,7 @@ import {
 } from "@autumn/ui/components/table/table-row-cells";
 import { TableCell, TableRow } from "@autumn/ui/components/ui/table";
 import { cn } from "@autumn/ui/lib/utils";
-import { useRef } from "react";
+import { Fragment, useRef } from "react";
 
 const DEFAULT_SKELETON_ROWS = 5;
 
@@ -31,6 +31,7 @@ export function TableBody() {
 		flexibleTableColumns,
 		getRowClassName,
 		skeletonRowCount,
+		renderExpandedRow,
 	} = useTableContext();
 	const rows = table.getRowModel().rows;
 	const lastRowCountRef = useRef(DEFAULT_SKELETON_ROWS);
@@ -101,33 +102,46 @@ export function TableBody() {
 				const isSelected = selectedItemId === (row.original as any).id;
 				const rowHref = getRowHref?.(row.original);
 
+				const expandedContent = renderExpandedRow?.(row);
+
 				return (
-					<TableRow
-						className={cn(
-							"text-tertiary-foreground transition-none h-12 py-4 relative",
-							rowClassName,
-							getRowClassName?.(row.original),
-							isSelected ? "z-100" : "hover:bg-interactive-secondary-hover",
-							(onRowClick || rowHref) && "cursor-pointer",
+					<Fragment key={row.id}>
+						<TableRow
+							className={cn(
+								"text-tertiary-foreground transition-none h-12 py-4 relative",
+								rowClassName,
+								getRowClassName?.(row.original),
+								isSelected ? "z-100" : "hover:bg-interactive-secondary-hover",
+								(onRowClick || rowHref) && "cursor-pointer",
+							)}
+							data-state={row.getIsSelected() && "selected"}
+							onClick={!rowHref ? () => onRowClick?.(row.original) : undefined}
+							onDoubleClick={
+								onRowDoubleClick
+									? () => onRowDoubleClick(row.original)
+									: undefined
+							}
+						>
+							<TableRowCells
+								row={row}
+								enableSelection={enableSelection}
+								flexibleTableColumns={flexibleTableColumns}
+								rowHref={rowHref}
+								visibleColumnKey={visibleColumnKey}
+								isExpanded={row.getIsExpanded()}
+							/>
+						</TableRow>
+						{row.getIsExpanded() && expandedContent != null && (
+							<TableRow className="hover:bg-transparent dark:hover:bg-transparent">
+								<TableCell
+									className="p-0"
+									colSpan={numberOfColumns + (enableSelection ? 1 : 0)}
+								>
+									{expandedContent}
+								</TableCell>
+							</TableRow>
 						)}
-						data-state={row.getIsSelected() && "selected"}
-						key={row.id}
-						onClick={!rowHref ? () => onRowClick?.(row.original) : undefined}
-						onDoubleClick={
-							onRowDoubleClick
-								? () => onRowDoubleClick(row.original)
-								: undefined
-						}
-					>
-						<TableRowCells
-							row={row}
-							enableSelection={enableSelection}
-							flexibleTableColumns={flexibleTableColumns}
-							rowHref={rowHref}
-							visibleColumnKey={visibleColumnKey}
-							isExpanded={row.getIsExpanded()}
-						/>
-					</TableRow>
+					</Fragment>
 				);
 			})}
 		</MotionTbody>

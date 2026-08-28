@@ -274,3 +274,95 @@ describe("computeCost — token pools", () => {
 		expect(below.rates.input).toBe(1);
 	});
 });
+
+describe("rate overrides — per-pool $/M overrides from model_markups", () => {
+	test("overrides a single pool and leaves the rest on models.dev rates", async () => {
+		// The shape of the AWS-EU complaint: the published cache_write rate is wrong,
+		// so the org pins its own without touching input/output.
+		const breakdown = await getModelCreditCostBreakdown({
+			modelName: "anthropic/claude-opus-4-5",
+			creditSystem: makeFeature({
+				"anthropic/claude-opus-4-5": { cache_write_cost: 12.5 },
+			}),
+			input: 1000,
+			output: 500,
+			cacheRead: 2000,
+			cacheWrite: 4000,
+		});
+
+		expect(breakdown.rates.cacheWrite).toBe(12.5);
+		expect(breakdown.rates.input).toBe(5);
+		expect(breakdown.rates.output).toBe(25);
+		expect(breakdown.rates.cacheRead).toBe(0.5);
+		expect(breakdown.overriddenPools).toEqual(["cache_write_cost"]);
+		expect(breakdown.baseCost).toBeCloseTo(
+			(5 * 1000 + 25 * 500 + 0.5 * 2000 + 12.5 * 4000) / PER_MILLION,
+			10,
+		);
+	});
+
+	test("an override beats the long-context tier rate for its pool", async () => {
+		const breakdown = await getModelCreditCostBreakdown({
+			modelName: "openai/gpt-5",
+			creditSystem: makeFeature({
+				"openai/gpt-5": { input_cost: 7 },
+			}),
+			input: 300_000,
+			output: 1000,
+		});
+
+		// The tier still applies (it drives output), but input uses the override.
+		expect(breakdown.tierApplied).toBe(true);
+		expect(breakdown.rates.input).toBe(7);
+		expect(breakdown.rates.output).toBe(4);
+		expect(breakdown.baseCost).toBeCloseTo(
+			(7 * 300_000 + 4 * 1000) / PER_MILLION,
+			10,
+		);
+	});
+
+	test("unpublished pools fall back to the overridden text rate, not the published one", async () => {
+		const breakdown = await getModelCreditCostBreakdown({
+			modelName: "openai/no-cache-model",
+			creditSystem: makeFeature({
+				"openai/no-cache-model": { input_cost: 30 },
+			}),
+			input: 1000,
+			output: 0,
+			cacheRead: 1000,
+		});
+
+		expect(breakdown.rates.input).toBe(30);
+		expect(breakdown.rates.cacheRead).toBe(30);
+	});
+
+	test("markup applies on top of the overridden rate", async () => {
+		const breakdown = await getModelCreditCostBreakdown({
+			modelName: "anthropic/claude-3-5-haiku-20241022",
+			creditSystem: makeFeature({
+				"anthropic/claude-3-5-haiku-20241022": {
+					markup: 100,
+					input_cost: 4,
+				},
+			}),
+			input: 1000,
+			output: 0,
+		});
+
+		expect(breakdown.baseCost).toBeCloseTo((4 * 1000) / PER_MILLION, 10);
+		expect(breakdown.cost).toBeCloseTo((8 * 1000) / PER_MILLION, 10);
+	});
+
+	test("no overrides reports an empty overriddenPools list", async () => {
+		const breakdown = await getModelCreditCostBreakdown({
+			modelName: "anthropic/claude-opus-4-5",
+			creditSystem: makeFeature({
+				"anthropic/claude-opus-4-5": { markup: 20 },
+			}),
+			input: 1000,
+			output: 500,
+		});
+
+		expect(breakdown.overriddenPools).toEqual([]);
+	});
+});

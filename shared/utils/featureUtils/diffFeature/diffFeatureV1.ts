@@ -1,4 +1,5 @@
 import type { ApiFeatureV1 } from "@api/features/apiFeatureV1.js";
+import { RATE_OVERRIDE_FIELDS } from "@models/featureModels/featureConfig/creditConfig.js";
 
 type FeatureDisplay = ApiFeatureV1["display"];
 type CreditSchema = ApiFeatureV1["credit_schema"];
@@ -66,8 +67,9 @@ const modelMarkupsEqual = (left: ModelMarkups, right: ModelMarkups) =>
 		right,
 		(leftEntry, rightEntry) =>
 			nullableNumbersEqual(leftEntry.markup, rightEntry.markup) &&
-			nullableNumbersEqual(leftEntry.input_cost, rightEntry.input_cost) &&
-			nullableNumbersEqual(leftEntry.output_cost, rightEntry.output_cost),
+			RATE_OVERRIDE_FIELDS.every((field) =>
+				nullableNumbersEqual(leftEntry[field], rightEntry[field]),
+			),
 	);
 
 const providerMarkupsEqual = (left: ProviderMarkups, right: ProviderMarkups) =>

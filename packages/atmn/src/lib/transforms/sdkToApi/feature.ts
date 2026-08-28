@@ -11,11 +11,19 @@ export interface ApiFeatureParams {
 		metered_feature_id: string;
 		credit_cost: number;
 	}>;
-	model_markups?: Record<string, {
-		markup?: number;
-		input_cost?: number;
-		output_cost?: number;
-	}>;
+	model_markups?: Record<
+		string,
+		{
+			markup?: number;
+			input_cost?: number;
+			output_cost?: number;
+			cache_read_cost?: number;
+			cache_write_cost?: number;
+			audio_input_cost?: number;
+			audio_output_cost?: number;
+			reasoning_cost?: number;
+		}
+	>;
 	default_markup?: number;
 	provider_markups?: Record<string, { markup: number }>;
 }
@@ -55,8 +63,13 @@ export function transformFeatureToApi(feature: Feature): ApiFeatureParams {
 						markup: entry.markup,
 						input_cost: entry.inputCost,
 						output_cost: entry.outputCost,
+						cache_read_cost: entry.cacheReadCost,
+						cache_write_cost: entry.cacheWriteCost,
+						audio_input_cost: entry.audioInputCost,
+						audio_output_cost: entry.audioOutputCost,
+						reasoning_cost: entry.reasoningCost,
 					},
-				])
+				]),
 			);
 		}
 		if (feature.defaultMarkup !== undefined) {

@@ -161,6 +161,7 @@ export const getTokenTrackParams = async ({
 			markup: pricing.markup,
 			markup_source: pricing.markupSource,
 			tier_applied: pricing.tierApplied,
+			overridden_rates: pricing.overriddenPools,
 			rates: {
 				input: pricing.rates.input,
 				output: pricing.rates.output,

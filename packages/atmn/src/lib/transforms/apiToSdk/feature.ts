@@ -1,4 +1,7 @@
-import type { Feature, ModelMarkupEntry } from "../../../compose/models/featureModels.js";
+import type {
+	Feature,
+	ModelMarkupEntry,
+} from "../../../compose/models/featureModels.js";
 import type { ApiFeature } from "../../api/types/feature.js";
 import { createTransformer } from "./Transformer.js";
 
@@ -13,7 +16,9 @@ function mapCreditSchema(
 	}));
 }
 
-function mapModelMarkups(api: RawApiFeature): Record<string, ModelMarkupEntry> | undefined {
+function mapModelMarkups(
+	api: RawApiFeature,
+): Record<string, ModelMarkupEntry> | undefined {
 	if (!api.model_markups) return undefined;
 	return Object.fromEntries(
 		Object.entries(api.model_markups).map(([modelId, entry]) => [
@@ -22,8 +27,13 @@ function mapModelMarkups(api: RawApiFeature): Record<string, ModelMarkupEntry> |
 				markup: entry.markup,
 				inputCost: entry.input_cost,
 				outputCost: entry.output_cost,
+				cacheReadCost: entry.cache_read_cost,
+				cacheWriteCost: entry.cache_write_cost,
+				audioInputCost: entry.audio_input_cost,
+				audioOutputCost: entry.audio_output_cost,
+				reasoningCost: entry.reasoning_cost,
 			},
-		])
+		]),
 	);
 }
 

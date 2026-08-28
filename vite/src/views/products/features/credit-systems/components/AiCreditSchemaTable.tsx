@@ -1,17 +1,20 @@
 import {
 	joinModelId,
 	type ModelsDevProvider,
+	RATE_OVERRIDE_FIELDS,
 	splitModelId,
 } from "@autumn/shared";
 import {
+	cn,
 	IconButton,
 	Input,
 	Tooltip,
 	TooltipContent,
 	TooltipTrigger,
 } from "@autumn/ui";
+import { useStore } from "@tanstack/react-form";
 import type { ColumnDef, Row } from "@tanstack/react-table";
-import { InfoIcon, PlusIcon, X } from "lucide-react";
+import { ChevronRightIcon, InfoIcon, PlusIcon, X } from "lucide-react";
 import { useMemo } from "react";
 import { Table } from "@/components/general/table";
 import { useProductTable } from "@/views/products/hooks/useProductTable";
@@ -21,10 +24,53 @@ import { addCustomModelMarkup } from "../utils/modelMarkupUtils";
 import { AiModelSelectDropdown } from "./AiModelSelectDropdown";
 import { CustomModelInput } from "./CustomModelInput";
 import { EditableNumberCell } from "./EditableNumberCell";
+import { RateOverridesPanel } from "./RateOverridesPanel";
 
 interface ModelRow {
 	fullId: string;
 	modelKey: string;
+}
+
+/** Chevron that opens a model's rate-override panel, badged with how many pools it overrides. */
+function ExpandRatesToggle({
+	form,
+	row,
+}: {
+	form: CreditSystemFormInstance;
+	row: Row<ModelRow>;
+}) {
+	const overrideCount = useStore(form.store, (s) => {
+		const entry = s.values.model_markups[row.original.fullId];
+		return entry
+			? RATE_OVERRIDE_FIELDS.filter((field) => entry[field] != null).length
+			: 0;
+	});
+	const isExpanded = row.getIsExpanded();
+
+	return (
+		<button
+			type="button"
+			aria-label={isExpanded ? "Hide rate overrides" : "Show rate overrides"}
+			aria-expanded={isExpanded}
+			onClick={(e) => {
+				e.stopPropagation();
+				row.toggleExpanded();
+			}}
+			className="flex items-center gap-1 shrink-0 text-subtle hover:text-foreground"
+		>
+			<ChevronRightIcon
+				className={cn(
+					"h-3.5 w-3.5 transition-transform",
+					isExpanded && "rotate-90",
+				)}
+			/>
+			{overrideCount > 0 && (
+				<span className="text-[10px] tabular-nums text-foreground">
+					{overrideCount}
+				</span>
+			)}
+		</button>
+	);
 }
 
 function MarkupCell({
@@ -68,6 +114,39 @@ function formatCost(value: number | null | undefined): string {
 	return value.toFixed(2);
 }
 
+/**
+ * Read-only summary of what the row actually bills at: the override when the user set one,
+ * otherwise the model's published rate. Editing happens in the expanded panel.
+ */
+function EffectiveRateCell({
+	form,
+	fullId,
+	field,
+	publishedCost,
+}: {
+	form: CreditSystemFormInstance;
+	fullId: string;
+	field: "input_cost" | "output_cost";
+	publishedCost: number | null;
+}) {
+	const override = useStore(
+		form.store,
+		(s) => s.values.model_markups[fullId]?.[field],
+	);
+	const isOverridden = override != null;
+
+	return (
+		<span
+			className={cn(
+				"tabular-nums text-sm cursor-not-allowed select-none",
+				isOverridden ? "text-foreground" : "text-subtle",
+			)}
+		>
+			{formatCost(isOverridden ? override : publishedCost)}
+		</span>
+	);
+}
+
 export function AiCreditSchemaTable({
 	form,
 	providerKey,
@@ -104,31 +183,33 @@ export function AiCreditSchemaTable({
 				size: 200,
 				cell: ({ row }: { row: Row<ModelRow> }) => {
 					const { modelKey } = row.original;
-					if (isCustom) {
-						return (
-							<CustomModelInput
-								modelKey={modelKey}
-								onRename={(newKey) =>
-									renameKey(
-										joinModelId(providerKey, modelKey),
-										joinModelId(providerKey, newKey),
-									)
-								}
-							/>
-						);
-					}
 					return (
-						<AiModelSelectDropdown
-							value={modelKey}
-							onValueChange={(newKey) =>
-								renameKey(
-									joinModelId(providerKey, modelKey),
-									joinModelId(providerKey, newKey),
-								)
-							}
-							provider={provider}
-							isLoading={isLoading}
-						/>
+						<div className="flex items-center gap-1.5 min-w-0">
+							<ExpandRatesToggle form={form} row={row} />
+							{isCustom ? (
+								<CustomModelInput
+									modelKey={modelKey}
+									onRename={(newKey) =>
+										renameKey(
+											joinModelId(providerKey, modelKey),
+											joinModelId(providerKey, newKey),
+										)
+									}
+								/>
+							) : (
+								<AiModelSelectDropdown
+									value={modelKey}
+									onValueChange={(newKey) =>
+										renameKey(
+											joinModelId(providerKey, modelKey),
+											joinModelId(providerKey, newKey),
+										)
+									}
+									provider={provider}
+									isLoading={isLoading}
+								/>
+							)}
+						</div>
 					);
 				},
 			},
@@ -147,11 +228,13 @@ export function AiCreditSchemaTable({
 							/>
 						);
 					}
-					const cost = provider.models[modelKey]?.cost?.input ?? null;
 					return (
-						<span className="tabular-nums text-sm text-subtle cursor-not-allowed select-none">
-							{formatCost(cost)}
-						</span>
+						<EffectiveRateCell
+							form={form}
+							fullId={fullId}
+							field="input_cost"
+							publishedCost={provider.models[modelKey]?.cost?.input ?? null}
+						/>
 					);
 				},
 			},
@@ -170,11 +253,13 @@ export function AiCreditSchemaTable({
 							/>
 						);
 					}
-					const cost = provider.models[modelKey]?.cost?.output ?? null;
 					return (
-						<span className="tabular-nums text-sm text-subtle cursor-not-allowed select-none">
-							{formatCost(cost)}
-						</span>
+						<EffectiveRateCell
+							form={form}
+							fullId={fullId}
+							field="output_cost"
+							publishedCost={provider.models[modelKey]?.cost?.output ?? null}
+						/>
 					);
 				},
 			},
@@ -220,7 +305,7 @@ export function AiCreditSchemaTable({
 	const table = useProductTable({
 		data,
 		columns,
-		options: { getRowId: (row) => row.fullId },
+		options: { getRowId: (row) => row.fullId, getRowCanExpand: () => true },
 	});
 
 	return (
@@ -295,6 +380,14 @@ export function AiCreditSchemaTable({
 						enableSorting: false,
 						rowClassName: "h-10",
 						flexibleTableColumns: true,
+						renderExpandedRow: (row) => (
+							<RateOverridesPanel
+								form={form}
+								fullId={row.original.fullId}
+								cost={provider.models[row.original.modelKey]?.cost}
+								isCustom={isCustom}
+							/>
+						),
 					}}
 				>
 					<Table.Container>

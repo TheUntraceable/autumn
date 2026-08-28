@@ -85,8 +85,18 @@ export type CreditSystemFeature = FeatureBase & {
 export type ModelMarkupEntry = {
 	/** Per-model markup override. Omit to inherit provider/global markup. */
 	markup?: number;
+	/**
+	 * Per-pool rate overrides in $/M tokens. Each omitted pool uses the model's published
+	 * rate; an override also wins over the model's long-context tier rate for that pool.
+	 * `inputCost`/`outputCost` are required for `custom/` models.
+	 */
 	inputCost?: number;
 	outputCost?: number;
+	cacheReadCost?: number;
+	cacheWriteCost?: number;
+	audioInputCost?: number;
+	audioOutputCost?: number;
+	reasoningCost?: number;
 };
 
 export type ProviderMarkupEntry = {

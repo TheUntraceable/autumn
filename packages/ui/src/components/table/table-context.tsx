@@ -1,6 +1,6 @@
 import type { ColumnGroup } from "@autumn/ui/hooks/use-column-visibility";
 import { useIsMobile } from "@autumn/ui/hooks/use-is-mobile";
-import type { Table as TanstackTable } from "@tanstack/react-table";
+import type { Row, Table as TanstackTable } from "@tanstack/react-table";
 import {
 	type ComponentType,
 	createContext,
@@ -57,6 +57,11 @@ export interface TableProps<T> {
 	rowClassName?: string;
 	/** Per-row className (e.g. to style nested/variant rows differently) */
 	getRowClassName?: (row: T) => string | undefined;
+	/**
+	 * Renders a full-width panel beneath an expanded row. Use for detail content that isn't
+	 * shaped like a row; homogeneous children belong in `getSubRows` instead.
+	 */
+	renderExpandedRow?: (row: Row<T>) => ReactNode;
 	emptyStateChildren?: ReactNode;
 	emptyStateText?: string;
 	flexibleTableColumns?: boolean;

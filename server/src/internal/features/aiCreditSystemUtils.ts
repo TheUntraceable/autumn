@@ -6,6 +6,9 @@ import {
 	type ModelsDevCostTier,
 	type ModelsDevModel,
 	type ModelsDevProvider,
+	RATE_OVERRIDE_FIELDS,
+	type RateOverrideField,
+	type RateOverrides,
 	RecaseError,
 	splitModelId,
 } from "@autumn/shared";
@@ -135,17 +138,60 @@ export type ModelCostBreakdown = {
 	markupSource: "model" | "provider" | "default" | "none";
 	tierApplied: boolean;
 	rates: ModelCostRates;
+	/** Pools priced from `model_markups` rather than the model's published rates. */
+	overriddenPools: RateOverrideField[];
+};
+
+const listOverriddenPools = (
+	overrides: RateOverrides | undefined,
+): RateOverrideField[] =>
+	overrides
+		? RATE_OVERRIDE_FIELDS.filter((field) => overrides[field] != null)
+		: [];
+
+/**
+ * Layer the org's per-pool rate overrides onto the model's effective rates. An override wins
+ * over the tier rate for its pool, and pools with neither an override nor a published rate
+ * fall back to the (possibly overridden) base text rate.
+ */
+const resolveRates = ({
+	effective,
+	overrides,
+}: {
+	effective: ModelsDevCost;
+	overrides: RateOverrides | undefined;
+}): ModelCostRates => {
+	const input = overrides?.input_cost ?? effective.input;
+	const output = overrides?.output_cost ?? effective.output;
+
+	return {
+		input,
+		output,
+		cacheRead: overrides?.cache_read_cost ?? effective.cache_read ?? input,
+		cacheWrite: overrides?.cache_write_cost ?? effective.cache_write ?? input,
+		audioInput: overrides?.audio_input_cost ?? effective.input_audio ?? input,
+		audioOutput:
+			overrides?.audio_output_cost ?? effective.output_audio ?? output,
+		reasoning: overrides?.reasoning_cost ?? effective.reasoning ?? output,
+	};
 };
 
 const computeCost = ({
 	cost,
 	tokens,
 	markup,
+	overrides,
 }: {
 	cost: ModelsDevCost;
 	tokens: TokenInput;
 	markup: number;
-}): { cost: number; baseCost: number; tierApplied: boolean; rates: ModelCostRates } => {
+	overrides: RateOverrides | undefined;
+}): {
+	cost: number;
+	baseCost: number;
+	tierApplied: boolean;
+	rates: ModelCostRates;
+} => {
 	const cacheRead = tokens.cacheRead ?? 0;
 	const cacheWrite = tokens.cacheWrite ?? 0;
 	const audioInput = tokens.audioInput ?? 0;
@@ -155,16 +201,7 @@ const computeCost = ({
 	const totalInput = tokens.input + cacheRead + cacheWrite;
 	const { effective, tierApplied } = getEffectiveCost(cost, totalInput);
 
-	// Pools without a published rate fall back to the base text rate.
-	const rates: ModelCostRates = {
-		input: effective.input,
-		output: effective.output,
-		cacheRead: effective.cache_read ?? effective.input,
-		cacheWrite: effective.cache_write ?? effective.input,
-		audioInput: effective.input_audio ?? effective.input,
-		audioOutput: effective.output_audio ?? effective.output,
-		reasoning: effective.reasoning ?? effective.output,
-	};
+	const rates = resolveRates({ effective, overrides });
 
 	const baseCost = new Decimal(rates.input)
 		.mul(tokens.input)
@@ -215,6 +252,36 @@ const resolveAiMarkup = ({
 	return { markup: 0, source: "none" };
 };
 
+/**
+ * Custom models have no published rates, so pools the user hasn't priced are explicitly zero
+ * rather than falling back to the input rate — they bill nothing until given an override.
+ */
+const customModelCost = ({
+	modelName,
+	overrides,
+}: {
+	modelName: string;
+	overrides: RateOverrides | undefined;
+}): ModelsDevCost => {
+	if (overrides?.input_cost == null || overrides?.output_cost == null) {
+		throw new RecaseError({
+			message: `Custom model ${modelName} is missing input_cost or output_cost in model_markups`,
+			code: ErrCode.InvalidRequest,
+			data: { modelName },
+		});
+	}
+
+	return {
+		input: overrides.input_cost,
+		output: overrides.output_cost,
+		cache_read: 0,
+		cache_write: 0,
+		input_audio: 0,
+		output_audio: 0,
+		reasoning: 0,
+	};
+};
+
 export const getModelCreditCostBreakdown = async ({
 	modelName,
 	creditSystem,
@@ -234,30 +301,22 @@ export const getModelCreditCostBreakdown = async ({
 		modelMarkup: markupEntry,
 	});
 
-	// Custom models carry no models.dev rates; they bill input/output at the user-supplied
-	// costs only (cache/audio/reasoning pools are not priced for custom models).
-	if (resolved.custom) {
-		if (markupEntry?.input_cost == null || markupEntry?.output_cost == null) {
-			throw new RecaseError({
-				message: `Custom model ${modelName} is missing input_cost or output_cost in model_markups`,
-				code: ErrCode.InvalidRequest,
-				data: { modelName },
-			});
-		}
-		const computed = computeCost({
-			cost: { input: markupEntry.input_cost, output: markupEntry.output_cost },
-			tokens: { input: tokens.input, output: tokens.output },
-			markup,
-		});
-		return { ...computed, markup, markupSource: source };
-	}
+	const cost = resolved.custom
+		? customModelCost({ modelName, overrides: markupEntry })
+		: resolved.model.cost;
 
 	const computed = computeCost({
-		cost: resolved.model.cost,
+		cost,
 		tokens,
 		markup,
+		overrides: markupEntry,
 	});
-	return { ...computed, markup, markupSource: source };
+	return {
+		...computed,
+		markup,
+		markupSource: source,
+		overriddenPools: listOverriddenPools(markupEntry),
+	};
 };
 
 export const getModelCreditCost = async (

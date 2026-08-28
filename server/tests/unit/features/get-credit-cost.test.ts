@@ -118,9 +118,57 @@ describe("getModelCreditCostBreakdown — pricing audit trail", () => {
 		expect(breakdown.tierApplied).toBe(false);
 		expect(breakdown.rates.input).toBe(1000);
 		expect(breakdown.rates.output).toBe(2000);
-		// Unpublished pools fall back to the text rates.
-		expect(breakdown.rates.cacheRead).toBe(1000);
-		expect(breakdown.rates.reasoning).toBe(2000);
+		// Custom models publish no cache/audio/reasoning rates, so those pools are
+		// free until given an explicit override.
+		expect(breakdown.rates.cacheRead).toBe(0);
+		expect(breakdown.rates.reasoning).toBe(0);
+		expect(breakdown.overriddenPools).toEqual(["input_cost", "output_cost"]);
+	});
+
+	test("custom model cache/reasoning tokens stay free without an override", async () => {
+		const withoutTokens = await getModelCreditCost({
+			modelName: CUSTOM_MODEL,
+			creditSystem: aiCreditFeature,
+			input: 1000,
+			output: 500,
+		});
+		const withTokens = await getModelCreditCost({
+			modelName: CUSTOM_MODEL,
+			creditSystem: aiCreditFeature,
+			input: 1000,
+			output: 500,
+			cacheRead: 10_000,
+			cacheWrite: 10_000,
+			reasoning: 10_000,
+		});
+
+		expect(withTokens).toBeCloseTo(withoutTokens, 10);
+	});
+
+	test("an override prices a pool the custom model left unpriced", async () => {
+		const withCacheRate: Feature = {
+			...aiCreditFeature,
+			model_markups: {
+				[CUSTOM_MODEL]: {
+					markup: 0,
+					input_cost: 1000,
+					output_cost: 2000,
+					cache_read_cost: 500,
+				},
+			},
+		};
+
+		const breakdown = await getModelCreditCostBreakdown({
+			modelName: CUSTOM_MODEL,
+			creditSystem: withCacheRate,
+			input: 0,
+			output: 0,
+			cacheRead: 1000,
+		});
+
+		expect(breakdown.rates.cacheRead).toBe(500);
+		expect(breakdown.baseCost).toBeCloseTo(0.5, 10);
+		expect(breakdown.overriddenPools).toContain("cache_read_cost");
 	});
 
 	test("explicit markup 0 reports source model; no markup anywhere reports none", async () => {
