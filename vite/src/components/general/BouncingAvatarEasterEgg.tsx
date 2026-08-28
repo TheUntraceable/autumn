@@ -1,16 +1,19 @@
 import { useRef, useState } from "react";
 import { useBouncingAnimation } from "@/hooks/useBouncingAnimation";
+import { useAdmin } from "@/views/admin/hooks/useAdmin";
 
 const AVATAR_URL = "https://github.com/TheUntraceable.png";
 const AVATAR_SIZE_PX = 96;
 const APPEARANCE_CHANCE = 0.01;
 
 export function BouncingAvatarEasterEgg() {
-	const [visible] = useState(
+	const { isAdmin } = useAdmin();
+	const [rolled] = useState(
 		() =>
 			Math.random() < APPEARANCE_CHANCE &&
 			!window.matchMedia("(prefers-reduced-motion: reduce)").matches,
 	);
+	const visible = rolled && isAdmin;
 	const imageRef = useRef<HTMLImageElement>(null);
 
 	useBouncingAnimation({
