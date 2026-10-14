@@ -264,7 +264,7 @@ export const createOrgResponse = ({
 		test_pkey: org.test_pkey,
 		live_pkey: org.live_pkey,
 		onboarded: org.onboarded ?? true,
-		deployed: org.deployed ?? true,
+		deployed: org.deployed ?? false,
 		config: OrgConfigSchema.parse(org.config || {}),
 		idempotency_config: org.idempotency_config ?? null,
 		custom_buttons: org.custom_buttons ?? [],
